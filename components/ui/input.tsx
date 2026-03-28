@@ -4,6 +4,7 @@ import clsx from "clsx";
 import React from "react";
 
 type InputProps = {
+  type?: string;
   placeholder?: string;
   className?: string;
   value?: string;
@@ -11,6 +12,7 @@ type InputProps = {
 };
 
 export default function Input({
+  type = "text",
   placeholder,
   className,
   value,
@@ -18,7 +20,7 @@ export default function Input({
 }: InputProps) {
   return (
     <input
-      type="text"
+      type={type}
       placeholder={placeholder}
       value={value}
       onChange={onChange}
@@ -29,10 +31,7 @@ export default function Input({
         "backdrop-blur-md",
         "text-white placeholder:text-gray-400",
         "transition-all duration-300",
-
-        // Focus glow effect
         "focus:ring-2 focus:ring-cyan-400/50 focus:border-cyan-400",
-
         className
       )}
     />
