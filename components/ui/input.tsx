@@ -9,6 +9,7 @@ type InputProps = {
   className?: string;
   value?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 };
 
 export default function Input({
@@ -17,6 +18,7 @@ export default function Input({
   className,
   value,
   onChange,
+  onKeyDown,
 }: InputProps) {
   return (
     <input
@@ -24,6 +26,7 @@ export default function Input({
       placeholder={placeholder}
       value={value}
       onChange={onChange}
+      onKeyDown={onKeyDown}
       className={clsx(
         "w-full px-4 py-2 rounded-xl outline-none",
         "bg-[var(--glass-bg)]",
