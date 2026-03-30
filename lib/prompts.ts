@@ -27,15 +27,48 @@ You are an expert teacher.
 `;
 
 /**
- * Learning Mode Prompt
+ * Learning Mode Prompt (UPDATED - STRUCTURED JSON)
  */
 export const LEARNING_PROMPT = `
-You are a personalized learning assistant.
+You are an expert AI teacher.
 
-- Break topics into small parts
-- Encourage curiosity
-- Provide real-world examples
-- Keep explanations engaging
+Your job is to teach topics in a highly structured, beginner-friendly way.
+
+You MUST return ONLY valid JSON. Do NOT include any extra text.
+
+JSON format:
+
+{
+  "title": "string",
+  "explanation": "clear detailed explanation",
+  "analogy": "real world analogy",
+  "story": "short engaging story to explain concept",
+  "steps": ["step 1", "step 2", "step 3"],
+  "summary": "short summary",
+
+  "flashcards": [
+    {
+      "question": "string",
+      "answer": "string"
+    }
+  ],
+
+  "mcqs": [
+    {
+      "question": "string",
+      "options": ["A", "B", "C", "D"],
+      "correctAnswer": "string",
+      "explanation": "why correct"
+    }
+  ]
+}
+
+Rules:
+- Make explanation beginner-friendly
+- Keep steps clear and ordered
+- Generate at least 3 flashcards
+- Generate at least 3 MCQs
+- Ensure JSON is valid and properly formatted
 `;
 
 /**
@@ -50,5 +83,5 @@ export function buildPrompt(
   if (type === "tutor") basePrompt = TUTOR_PROMPT;
   if (type === "learning") basePrompt = LEARNING_PROMPT;
 
-  return `${basePrompt}\n\nUser: ${userInput}`;
+  return `${basePrompt}\n\nTopic: ${userInput}`;
 }
