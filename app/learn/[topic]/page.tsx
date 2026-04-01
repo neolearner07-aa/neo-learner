@@ -30,7 +30,6 @@ export default function TopicPage() {
           // DEV MODE fallback (string)
           setData(result);
         }
-
       } catch (err) {
         setError("Failed to load learning content");
       } finally {
@@ -41,41 +40,41 @@ export default function TopicPage() {
     fetchData();
   }, [topic]);
 
-  // 🔄 Loading UI
-  if (loading) {
-    return (
+  return (
+    <>
+      {/* 🔄 Loading UI */}
+      {loading && (
         <div className="flex flex-col justify-center items-center h-[60vh] gap-4">
-            <Spinner />
-        <p className="text-gray-400 text-sm">
+          <Spinner />
+          <p className="text-gray-400 text-sm">
             Generating your personalized lesson...
-        </p>
+          </p>
         </div>
-        );
-    }
+      )}
 
-  // ❌ Error UI
-  if (error) {
-    return (
+      {/* ❌ Error UI */}
+      {!loading && error && (
         <div className="flex flex-col items-center justify-center gap-3 text-center">
-            <p className="text-red-400 font-semibold">
-                ⚠️ Something went wrong
-            </p>
-            <p className="text-gray-400 text-sm">
-                Please try again later.
-            </p>
+          <p className="text-red-400 font-semibold">
+            ⚠️ Something went wrong
+          </p>
+          <p className="text-gray-400 text-sm">
+            Please try again later.
+          </p>
         </div>
-        );
-    }
+      )}
 
-  // ⚠️ Safety fallback
-  if (!data) {
-    return (
-      <div className="text-gray-400 text-center">
-        No data available
-      </div>
-    );
-  }
+      {/* ⚠️ Empty State */}
+      {!loading && !error && !data && (
+        <div className="text-gray-400 text-center">
+          No data available
+        </div>
+      )}
 
-  // ✅ Final Render
-  return <LessonView data={data} />;
+      {/* ✅ Final Content */}
+      {!loading && !error && data && (
+        <LessonView data={data} />
+      )}
+    </>
+  );
 }

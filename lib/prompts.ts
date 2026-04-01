@@ -72,16 +72,43 @@ Rules:
 `;
 
 /**
+ * Solve Mode Prompt (STRICT STRUCTURED JSON)
+ */
+export const SOLVE_PROMPT = `
+You are an expert problem solver.
+
+You must solve the given problem step-by-step.
+
+You MUST return ONLY valid JSON. No extra text.
+
+JSON format:
+
+{
+  "question": "original problem",
+  "steps": ["step 1", "step 2", "step 3"],
+  "finalAnswer": "final result",
+  "explanation": "clear explanation"
+}
+
+Rules:
+- Always include all fields
+- Steps must be clear and ordered
+- Explanation must be beginner-friendly
+- Do NOT return anything outside JSON
+`;
+
+/**
  * Function to combine system prompt + user input
  */
 export function buildPrompt(
-  type: "general" | "tutor" | "learning",
+  type: "general" | "tutor" | "learning" | "solve",
   userInput: string
 ): string {
   let basePrompt = GENERAL_PROMPT;
 
   if (type === "tutor") basePrompt = TUTOR_PROMPT;
   if (type === "learning") basePrompt = LEARNING_PROMPT;
+  if (type === "solve") basePrompt = SOLVE_PROMPT;
 
   return `${basePrompt}\n\nTopic: ${userInput}`;
 }

@@ -7,6 +7,8 @@ import Input from "@/components/ui/input";
 import Button from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import Badge from "@/components/ui/badge";
+import App from "next/app";
+import AppShell from "@/components/layout/appshell";
 
 export default function LearnPage() {
   const [topic, setTopic] = useState("");
