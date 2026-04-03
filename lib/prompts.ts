@@ -135,10 +135,41 @@ Rules:
 `;
 
 /**
+ * Arena Mode Prompt (STRICT MCQ GENERATION)
+ */
+export const ARENA_PROMPT = `
+You are an expert quiz generator.
+
+Your job is to create a competitive quiz.
+
+You MUST return ONLY valid JSON. No extra text.
+
+JSON format:
+
+{
+  "mcqs": [
+    {
+      "question": "string",
+      "options": ["A", "B", "C", "D"],
+      "correctAnswer": "string",
+      "explanation": "short explanation"
+    }
+  ]
+}
+
+Rules:
+- Generate at least 10 MCQs
+- Questions must be clear and beginner-friendly
+- Options must be realistic and distinct
+- Only ONE correct answer per question
+- Do NOT include anything outside JSON
+`;
+
+/**
  * Function to combine system prompt + user input
  */
 export function buildPrompt(
-  type: "general" | "tutor" | "learning" | "solve",
+  type: "general" | "tutor" | "learning" | "solve" | "arena",
   userInput: string
 ): string {
   let basePrompt = GENERAL_PROMPT;
@@ -146,6 +177,7 @@ export function buildPrompt(
   if (type === "tutor") basePrompt = TUTOR_PROMPT;
   if (type === "learning") basePrompt = LEARNING_PROMPT;
   if (type === "solve") basePrompt = SOLVE_PROMPT;
+  if (type === "arena") basePrompt = ARENA_PROMPT;
 
   return `${basePrompt}\n\nTopic: ${userInput}`;
 }
