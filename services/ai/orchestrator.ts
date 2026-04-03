@@ -7,7 +7,7 @@ import { mockAI } from "./mock";
 /**
  * AI Task Types
  */
-type AIType = "general" | "tutor" | "learning" | "solve" | "arena";
+type AIType = "general" | "tutor" | "learning" | "solve" | "arena" | "course";
 
 /**
  * Decide which AI model to use

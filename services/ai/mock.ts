@@ -1,49 +1,44 @@
 /**
  * Mock AI (Development Mode)
- * Simulates different AI behaviors
+ * Returns structured JSON for testing
  */
 
 export async function mockAI(prompt: string): Promise<string> {
   await new Promise((res) => setTimeout(res, 500));
 
-  // 🧠 Detect if it's asking for study plan (JSON)
-  if (prompt.toLowerCase().includes("study plan")) {
-    return JSON.stringify({
-      goal: "Learn Python",
-      duration: "30 days",
+  // Extract topic (basic)
+  const topic = prompt.split("for:")?.[1]?.trim() || "Sample Topic";
 
-      topics: [
-        { id: "1", title: "Python Basics" },
-        { id: "2", title: "Data Types" },
-        { id: "3", title: "Control Flow" },
-        { id: "4", title: "Functions" },
-        { id: "5", title: "OOP Basics" }
-      ],
-
-      dailyPlan: [
-        { day: 1, tasks: ["Install Python", "Write first program"] },
-        { day: 2, tasks: ["Variables", "Practice problems"] },
-        { day: 3, tasks: ["Conditions", "Mini project"] },
-        { day: 4, tasks: ["Loops", "Exercises"] },
-        { day: 5, tasks: ["Functions", "Practice coding"] }
-      ],
-
-      weeklyPlan: [
-        { week: 1, focus: "Fundamentals" },
-        { week: 2, focus: "Intermediate Concepts" }
-      ]
-    });
-  }
-
-  // 🧠 Otherwise → coaching / general response
-  return `
-Focus on your weak topics and revise them carefully.
-
-Try to:
-- Spend more time on difficult concepts
-- Practice daily
-- Revise regularly
-
-Consistency is key to success.
-`;
+  return JSON.stringify({
+    title: `${topic} Course`,
+    description: `Learn ${topic} from beginner to advanced level.`,
+    modules: [
+      {
+        title: "Introduction",
+        lessons: [
+          {
+            title: `What is ${topic}?`,
+            content: `${topic} is a fundamental concept. This lesson introduces the basics in a simple way.`,
+          },
+          {
+            title: `Why learn ${topic}?`,
+            content: `Understanding ${topic} is important for real-world applications and problem solving.`,
+          },
+        ],
+      },
+      {
+        title: "Core Concepts",
+        lessons: [
+          {
+            title: `${topic} Basics`,
+            content: `In this lesson, we explore the core principles of ${topic}.`,
+          },
+          {
+            title: `Advanced ${topic}`,
+            content: `This lesson dives deeper into advanced topics and real-world usage.`,
+          },
+        ],
+      },
+    ],
+  });
 }

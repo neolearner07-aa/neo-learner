@@ -166,10 +166,49 @@ Rules:
 `;
 
 /**
+ * Course Generation Prompt (STRICT STRUCTURED JSON)
+ */
+export const COURSE_PROMPT = `
+You are an expert course creator.
+
+Your job is to create a structured, beginner-friendly course.
+
+You MUST return ONLY valid JSON. Do NOT include any extra text.
+
+JSON format:
+
+{
+  "id": "course-id",
+  "title": "course title",
+  "description": "short description",
+  "modules": [
+    {
+      "id": "module-id",
+      "title": "module title",
+      "lessons": [
+        {
+          "id": "lesson-id",
+          "title": "lesson title",
+          "content": "detailed beginner-friendly explanation"
+        }
+      ]
+    }
+  ]
+}
+
+Rules:
+- Course must have at least 2 modules
+- Each module must have at least 2 lessons
+- Content must be beginner-friendly
+- Keep explanations clear and structured
+- Do NOT return anything outside JSON
+`;
+
+/**
  * Function to combine system prompt + user input
  */
 export function buildPrompt(
-  type: "general" | "tutor" | "learning" | "solve" | "arena",
+  type: "general" | "tutor" | "learning" | "solve" | "arena" | "course",
   userInput: string
 ): string {
   let basePrompt = GENERAL_PROMPT;
@@ -178,6 +217,7 @@ export function buildPrompt(
   if (type === "learning") basePrompt = LEARNING_PROMPT;
   if (type === "solve") basePrompt = SOLVE_PROMPT;
   if (type === "arena") basePrompt = ARENA_PROMPT;
+  if (type === "solve") basePrompt = SOLVE_PROMPT;
 
   return `${basePrompt}\n\nTopic: ${userInput}`;
 }

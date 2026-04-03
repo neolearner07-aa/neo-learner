@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import React, { useState } from "react";
 
-const navItems = ["Learn", "Solve", "Tutor", "Arena", "Profile"];
+const navItems = ["Learn", "Solve", "Tutor", "Arena", "Courses", "Profile"];
 
 type SidebarProps = {
   isOpen: boolean;
