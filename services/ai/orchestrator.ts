@@ -30,12 +30,27 @@ function selectModel(userInput: string): "openai" | "gemini" {
 }
 
 /**
+ * Track AI Usage (localStorage)
+ */
+function trackAIUsage() {
+  if (typeof window === "undefined") return;
+
+  const current = localStorage.getItem("ai_usage");
+  const count = current ? parseInt(current) : 0;
+
+  localStorage.setItem("ai_usage", String(count + 1));
+}
+
+/**
  * Main Orchestrator with Failover
  */
 export async function runAI(
   type: AIType,
   userInput: string
 ): Promise<string> {
+
+    // 📊 Track usage
+  trackAIUsage();
 
   // 🧠 DEV MODE CHECK
   if (process.env.NEXT_PUBLIC_DEV_MODE === "true") {
