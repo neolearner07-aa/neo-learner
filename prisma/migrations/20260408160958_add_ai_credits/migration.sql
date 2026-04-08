@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "AIUsage" ADD COLUMN     "credits" INTEGER NOT NULL DEFAULT 3;

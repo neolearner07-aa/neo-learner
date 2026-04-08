@@ -10,8 +10,7 @@ export type MCQ = {
   explanation: string;
 };
 
-export type LearningModule = {
-  title: string;
+export type LessonContent = {
   explanation: string;
   analogy: string;
   story: string;
@@ -19,4 +18,16 @@ export type LearningModule = {
   summary: string;
   flashcards: Flashcard[];
   mcqs: MCQ[];
+};
+
+export type Lesson = {
+  id: string;
+  title: string;
+  content: LessonContent;
+};
+
+export type LearningModule = {
+  id: string;
+  title: string;
+  lessons: Lesson[];
 };

@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import { useEffect } from "react";
 import Card from "@/components/ui/card";
 import Badge from "@/components/ui/badge";
 import { motion } from "framer-motion";
@@ -9,20 +10,75 @@ import MCQQuiz from "../shared/mcq-quiz";
 import { fadeIn, slideUp, transition } from "@/lib/animations";
 import { LearningModule } from "@/types/learn";
 import ChatBox from "./chat-box";
+import { useSession } from "next-auth/react";
+import Button from "@/components/ui/button";
 
 type LessonViewProps = {
-  data: LearningModule | string;
+  data: LearningModule;
 };
 
 export default function LessonView({ data }: LessonViewProps) {
-  // 🧠 Handle DEV MODE (string response)
-  if (typeof data === "string") {
+  const { data: session } = useSession();
+
+  const [progress, setProgress] = useState<number>(0);
+
+  useEffect(() => {
+  async function fetchProgress() {
+    try {
+      const res = await fetch(
+        `/api/progress?courseId=${data.id}`
+      );
+
+      const result = await res.json();
+
+      if (result && !result.error) {
+        setProgress(result.progressPercent || 0);
+      }
+    } catch (error) {
+      console.error("Failed to load progress:", error);
+    }
+  }
+
+  if (data?.id) {
+    fetchProgress();
+  }
+}, [data.id]);
+
+  // 🛡️ HARD SAFETY CHECK
+  if (!data || !Array.isArray(data.lessons)) {
     return (
-      <Card>
-        <p className="text-gray-300 whitespace-pre-line">{data}</p>
-      </Card>
+      <div className="text-center text-gray-400">
+        No lessons available
+      </div>
     );
   }
+
+  // ✅ Handle lesson completion
+  const handleComplete = async (lessonId: string) => {
+    try {
+      const res = await fetch("/api/progress", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          courseId: data.id, // temporary (will improve later)
+          lessonId,
+          totalLessons: data.lessons.length,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (result.error) {
+        alert(result.error);
+      } else {
+        setProgress(result.progressPercent);
+      }
+    } catch (error) {
+      console.error("Progress error:", error);
+    }
+  };
 
   return (
     <motion.div
@@ -37,64 +93,87 @@ export default function LessonView({ data }: LessonViewProps) {
         <h1 className="text-3xl font-bold text-white">{data.title}</h1>
       </motion.div>
 
-      {/* Explanation */}
-      <motion.div variants={slideUp} transition={transition}>
-        <Card>
-          <Badge>Explanation</Badge>
-          <p className="mt-2 text-gray-300">{data.explanation}</p>
-        </Card>
-      </motion.div>
+      {/* ✅ Progress Bar */}
+      <Card>
+        <p className="text-white font-semibold">
+          Progress: {progress}%
+        </p>
 
-      {/* Analogy */}
-      <motion.div variants={slideUp} transition={transition}>
-        <Card>
-          <Badge>Analogy</Badge>
-          <p className="mt-2 text-gray-300">{data.analogy}</p>
-        </Card>
-      </motion.div>
+        <div className="w-full bg-gray-700 rounded-full h-3 mt-2">
+          <div
+            className="bg-green-500 h-3 rounded-full transition-all"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      </Card>
 
-      {/* Story */}
-      <motion.div variants={slideUp} transition={transition}>
-        <Card>
-          <Badge>Story</Badge>
-          <p className="mt-2 text-gray-300">{data.story}</p>
-        </Card>
-      </motion.div>
+      {/* 🔥 LOOP THROUGH LESSONS */}
+      {data.lessons.map((lesson) => (
+        <motion.div
+          key={lesson.id}
+          variants={slideUp}
+          transition={transition}
+          className="flex flex-col gap-6"
+        >
+          {/* ✅ Mark Complete Button */}
+          <Button
+            onClick={() => handleComplete(lesson.id)}
+          >
+            Mark as Completed
+          </Button>
 
-      {/* Steps */}
-      <motion.div variants={slideUp} transition={transition}>
-        <Card>
-          <Badge>Step-by-Step</Badge>
-          <ul className="mt-2 list-disc list-inside text-gray-300 space-y-1">
-            {data.steps.map((step, index) => (
-              <li key={index}>{step}</li>
-            ))}
-          </ul>
-        </Card>
-      </motion.div>
+          {/* Explanation */}
+          <Card>
+            <Badge>Explanation</Badge>
+            <p className="mt-2 text-gray-300">
+              {lesson.content.explanation}
+            </p>
+          </Card>
 
-      {/* Summary */}
-      <motion.div variants={slideUp} transition={transition}>
-        <Card>
-          <Badge>Summary</Badge>
-          <p className="mt-2 text-gray-300">{data.summary}</p>
-        </Card>
-      </motion.div>
+          {/* Analogy */}
+          <Card>
+            <Badge>Analogy</Badge>
+            <p className="mt-2 text-gray-300">
+              {lesson.content.analogy}
+            </p>
+          </Card>
 
-      {/* Flashcards */}
-      {typeof data !== "string" && (
-        <Flashcards cards={data.flashcards} />
-      )}
+          {/* Story */}
+          <Card>
+            <Badge>Story</Badge>
+            <p className="mt-2 text-gray-300">
+              {lesson.content.story}
+            </p>
+          </Card>
 
-      {/* MCQ Quiz */}
-      {typeof data !== "string" && (
-        <MCQQuiz questions={data.mcqs} />
-      )}
+          {/* Steps */}
+          <Card>
+            <Badge>Step-by-Step</Badge>
+            <ul className="mt-2 list-disc list-inside text-gray-300 space-y-1">
+              {lesson.content.steps?.map((step, index) => (
+                <li key={index}>{step}</li>
+              ))}
+            </ul>
+          </Card>
+
+          {/* Summary */}
+          <Card>
+            <Badge>Summary</Badge>
+            <p className="mt-2 text-gray-300">
+              {lesson.content.summary}
+            </p>
+          </Card>
+
+          {/* Flashcards */}
+          <Flashcards cards={lesson.content.flashcards || []} />
+
+          {/* MCQ Quiz */}
+          <MCQQuiz questions={lesson.content.mcqs || []} />
+        </motion.div>
+      ))}
 
       {/* Chat */}
-      {typeof data !== "string" && (
-        <ChatBox topic={data.title} />
-    )}
+      <ChatBox topic={data.title} />
     </motion.div>
   );
 }

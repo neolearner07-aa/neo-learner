@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { findUserByEmail, createUser } from "@/lib/db";
+import { findUserByEmail, createUser } from "@/services/auth/user.service";
 import { hashPassword } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
 
-    // ✅ 1. Check empty fields
+    // 1. Validate input
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
@@ -14,7 +14,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ 2. Email validation
     if (!email.includes("@")) {
       return NextResponse.json(
         { error: "Invalid email format" },
@@ -22,7 +21,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ 3. Password strength
     if (password.length < 6) {
       return NextResponse.json(
         { error: "Password must be at least 6 characters" },
@@ -30,8 +28,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ 4. Check existing user
-    const existingUser = findUserByEmail(email);
+    // 2. Check if user exists (IMPORTANT: await)
+    const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
       return NextResponse.json(
@@ -40,23 +38,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ 5. Hash password
+    // 3. Hash password
     const hashedPassword = await hashPassword(password);
 
-    // ✅ 6. Create user
-    createUser({
-      id: Date.now().toString(),
+    // 4. Create user in DATABASE ✅
+    await createUser({
       email,
       password: hashedPassword,
     });
 
-    // ✅ 7. Safe response (no password)
     return NextResponse.json(
       { message: "User created successfully" },
       { status: 201 }
     );
   } catch (error) {
-    // ✅ 8. Generic error (no leak)
+    console.error(error);
+
     return NextResponse.json(
       { error: "Something went wrong" },
       { status: 500 }

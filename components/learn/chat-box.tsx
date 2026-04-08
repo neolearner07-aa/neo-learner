@@ -8,8 +8,6 @@ import Card from "@/components/ui/card";
 import Badge from "@/components/ui/badge";
 import Spinner from "@/components/ui/spinner";
 
-import { runAI } from "@/services/ai/orchestrator";
-
 type Message = {
   role: "user" | "ai";
   content: string;
@@ -33,23 +31,43 @@ export default function ChatBox({ topic }: { topic: string }) {
     setLoading(true);
 
     try {
-      const response = await runAI(
-        "tutor",
-        `Topic: ${topic}\nQuestion: ${input}`
-      );
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          type: "tutor",
+          prompt: `Topic: ${topic}\nQuestion: ${input}`,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "AI request failed");
+      }
 
       const aiMessage: Message = {
         role: "ai",
-        content: response,
+        content: data.response || "No response from AI",
       };
 
       setMessages((prev) => [...prev, aiMessage]);
-    } catch {
+    } catch (error: unknown) {
+      let message = "❌ Failed to get response";
+
+      if (error instanceof Error) {
+        if (error.message.includes("No AI credits")) {
+          message = "⚠️ No credits left. Watch an ad to continue.";
+        }
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          content: "❌ Failed to get response",
+          content: message,
         },
       ]);
     } finally {
@@ -57,11 +75,30 @@ export default function ChatBox({ topic }: { topic: string }) {
     }
   };
 
+  const handleReward = async () => {
+    try {
+      const res = await fetch("/api/reward", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        throw new Error(data.error || "Reward failed");
+      }
+
+      alert("🎉 Credits added!");
+    } catch {
+      alert("❌ Failed to add credits");
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <Badge>Ask AI Tutor</Badge>
 
-      <Card className="flex flex-col gap-4 max-h-[400px] overflow-y-auto">
+      {/* Chat Messages */}
+      <Card className="flex flex-col gap-4 h-[300px] overflow-y-auto p-3">
         {messages.length === 0 && (
           <p className="text-gray-400 text-sm">
             Ask anything about this topic...
@@ -88,8 +125,8 @@ export default function ChatBox({ topic }: { topic: string }) {
         )}
       </Card>
 
-      {/* Input */}
-      <div className="flex gap-2">
+      {/* Input + Actions */}
+      <div className="flex gap-2 mt-2">
         <Input
           placeholder="Ask a question..."
           value={input}
@@ -98,6 +135,13 @@ export default function ChatBox({ topic }: { topic: string }) {
             if (e.key === "Enter") sendMessage();
           }}
         />
+
+        <Button
+          onClick={handleReward}
+          className="bg-yellow-500 text-black px-4 py-2 rounded whitespace-nowrap"
+        >
+          Watch Ad
+        </Button>
 
         <Button onClick={sendMessage} disabled={loading}>
           Send

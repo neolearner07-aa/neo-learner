@@ -6,39 +6,87 @@ import { useParams } from "next/navigation";
 import LessonView from "@/components/learn/lesson-view";
 import Spinner from "@/components/ui/spinner";
 
-import { generateLearningModule } from "@/services/learn/learn-generator";
 import { LearningModule } from "@/types/learn";
 
 export default function TopicPage() {
   const params = useParams();
   const topic = decodeURIComponent(params.topic as string);
 
-  const [data, setData] = useState<LearningModule | string | null>(null);
+  const [data, setData] = useState<LearningModule | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const result = await generateLearningModule(topic);
+  async function fetchData() {
+    try {
+      const res = await fetch("/api/courses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ topic }),
+      });
 
-        // 🧠 Try parsing JSON (for future real AI)
-        try {
-          const parsed = JSON.parse(result) as LearningModule;
-          setData(parsed);
-        } catch {
-          // DEV MODE fallback (string)
-          setData(result);
-        }
-      } catch (err) {
-        setError("Failed to load learning content");
-      } finally {
-        setLoading(false);
+      const result = await res.json();
+
+      if (result.error) {
+  if (result.error === "No AI credits left") {
+    setError("🚫 You have no AI credits left. Watch ads or upgrade.");
+  } else {
+    setError(result.error);
+  }
+  return;
+}
+
+      const content = result.content;
+
+      // 🛡️ HARD SAFETY LAYER
+      let safeData: LearningModule;
+
+      if (content && Array.isArray(content.lessons)) {
+        safeData = {
+          id: result.id, // ✅ FIXED (REAL DB ID)
+          title: content.title || topic,
+          lessons: content.lessons,
+        };
+      } else {
+        safeData = {
+          id: result.id || "temp-id", // ✅ FIXED (fallback id)
+          title: topic,
+          lessons: [
+            {
+              id: "1",
+              title: topic,
+              content: {
+                explanation:
+                  typeof content === "string"
+                    ? content
+                    : "No content available",
+                analogy: "",
+                story: "",
+                steps: [],
+                summary: "",
+                flashcards: [],
+                mcqs: [],
+              },
+            },
+          ],
+        };
       }
-    }
 
-    fetchData();
-  }, [topic]);
+      console.log("🔥 FINAL DATA SENT TO UI:", safeData);
+
+      setData(safeData);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load learning content");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  fetchData();
+}, [topic]);
 
   return (
     <>
