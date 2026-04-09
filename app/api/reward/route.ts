@@ -4,60 +4,32 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "../auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
+
+import { withErrorHandler } from "@/lib/error-handler";
+import { successResponse, errorResponse } from "@/lib/api-response";
+
+import { rewardCredits } from "@/services/ai/ai-reward.service";
 
 /**
  * 🎁 Reward Credits (Ad System)
  */
 export async function POST() {
-  try {
+  return withErrorHandler(async () => {
     const session = await getServerSession(authOptions);
 
-    // ❌ Not logged in
+    // 🔐 Auth check
     if (!session || !session.user?.id) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        errorResponse("Unauthorized"),
         { status: 401 }
       );
     }
 
-    const userId = session.user.id;
-
-    // 🧠 Find usage record
-    const usage = await prisma.aIUsage.findFirst({
-      where: { userId },
-    });
-
-    // 🧠 If not exists → create
-    if (!usage) {
-      const newUsage = await prisma.aIUsage.create({
-        data: {
-          userId,
-          count: 0,
-          credits: 3, // 🎁 reward credits
-        },
-      });
-
-      return NextResponse.json(newUsage);
-    }
-
-    // ✅ Add credits
-    const updated = await prisma.aIUsage.update({
-      where: { id: usage.id },
-      data: {
-        credits: {
-          increment: 3, // 🎁 reward amount
-        },
-      },
-    });
-
-    return NextResponse.json(updated);
-  } catch (error) {
-    console.error("Reward Error:", error);
+    const result = await rewardCredits(session.user.id);
 
     return NextResponse.json(
-      { error: "Failed to reward credits" },
-      { status: 500 }
+      successResponse(result),
+      { status: 200 }
     );
-  }
+  });
 }

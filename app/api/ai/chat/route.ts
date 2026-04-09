@@ -1,19 +1,32 @@
 import { NextRequest } from "next/server";
 import OpenAI from "openai";
+
 import { runAI } from "@/services/ai/orchestrator";
+
+import { withErrorHandler } from "@/lib/error-handler";
+import { errorResponse } from "@/lib/api-response";
+
+import { z } from "zod";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { message, type } = body;
+// ✅ Match EXACT AIType
+const chatSchema = z.object({
+  message: z.string().min(1, "Message is required"),
+  type: z
+    .enum(["general", "tutor", "learning", "solve", "arena", "course"])
+    .optional(),
+});
 
-    if (!message || typeof message !== "string") {
-      return new Response("Invalid message", { status: 400 });
-    }
+export async function POST(req: NextRequest) {
+  return withErrorHandler(async () => {
+    const body = await req.json();
+
+    // ✅ Validate input
+    const validated = chatSchema.parse(body);
+    const { message, type } = validated;
 
     // 🔥 Try OpenAI Streaming FIRST
     try {
@@ -48,7 +61,7 @@ export async function POST(req: NextRequest) {
     } catch (streamError) {
       console.warn("Streaming failed, using fallback AI...");
 
-      // 🔥 Fallback to orchestrator (Gemini or OpenAI normal)
+      // 🔥 Fallback to orchestrator
       const response = await runAI(type || "general", message);
 
       return new Response(response, {
@@ -57,32 +70,5 @@ export async function POST(req: NextRequest) {
         },
       });
     }
-  } catch (error: unknown) {
-  let message = "Something went wrong";
-
-  if (error instanceof Error) {
-    console.error("API Error:", error.message);
-
-    if (error.message.includes("quota")) {
-      message = "AI service quota exceeded. Please try again later.";
-    } else if (error.message.includes("failed")) {
-      message = "AI service is currently unavailable.";
-    } else {
-      message = error.message;
-    }
-  } else {
-    console.error("Unknown API Error:", error);
-  }
-
-  return new Response(
-    JSON.stringify({
-      success: false,
-      error: message,
-    }),
-    {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
-  }
+  });
 }

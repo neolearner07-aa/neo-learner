@@ -4,6 +4,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "../auth/[...nextauth]/route";
+
+import { withErrorHandler } from "@/lib/error-handler";
+import { successResponse, errorResponse } from "@/lib/api-response";
+
+import { progressSchema } from "@/validators/progress";
+import { updateProgressSchema } from "@/validators/progress";
+
 import {
   getProgress,
   updateProgress,
@@ -13,12 +20,13 @@ import {
  * ✅ GET → Fetch progress
  */
 export async function GET(req: Request) {
-  try {
+  return withErrorHandler(async () => {
     const session = await getServerSession(authOptions);
 
+    // 🔐 Auth check
     if (!session || !session.user?.id) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        errorResponse("Unauthorized"),
         { status: 401 }
       );
     }
@@ -28,59 +36,50 @@ export async function GET(req: Request) {
 
     if (!courseId) {
       return NextResponse.json(
-        { error: "Course ID required" },
+        errorResponse("Course ID required"),
         { status: 400 }
       );
     }
 
     const progress = await getProgress(session.user.id, courseId);
 
-    return NextResponse.json(progress);
-  } catch (error) {
-    console.error(error);
     return NextResponse.json(
-      { error: "Failed to fetch progress" },
-      { status: 500 }
+      successResponse(progress),
+      { status: 200 }
     );
-  }
+  });
 }
 
 /**
  * ✅ POST → Update progress
  */
 export async function POST(req: Request) {
-  try {
+  return withErrorHandler(async () => {
     const session = await getServerSession(authOptions);
 
+    // 🔐 Auth check
     if (!session || !session.user?.id) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        errorResponse("Unauthorized"),
         { status: 401 }
       );
     }
 
-    const { courseId, lessonId, totalLessons } = await req.json();
+    const body = await req.json();
 
-    if (!courseId || !lessonId || !totalLessons) {
-      return NextResponse.json(
-        { error: "Missing fields" },
-        { status: 400 }
-      );
-    }
+    const validated = updateProgressSchema.parse(body);
 
+    // 🔥 Service call
     const updated = await updateProgress(
       session.user.id,
-      courseId,
-      lessonId,
-      totalLessons
+      validated.courseId,
+      validated.lessonId,
+      validated.totalLessons
     );
 
-    return NextResponse.json(updated);
-  } catch (error) {
-    console.error(error);
     return NextResponse.json(
-      { error: "Failed to update progress" },
-      { status: 500 }
+      successResponse(updated),
+      { status: 200 }
     );
-  }
+  });
 }

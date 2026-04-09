@@ -4,43 +4,40 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "../auth/[...nextauth]/route";
+
+import { withErrorHandler } from "@/lib/error-handler";
+import { successResponse, errorResponse } from "@/lib/api-response";
+
+import { createCourseSchema } from "@/validators/course";
 import { generateAndSaveLearningModule } from "@/services/learn/learn-generator";
 
 export async function POST(req: Request) {
-  try {
+  return withErrorHandler(async () => {
     const session = await getServerSession(authOptions);
 
-    // ❌ Not logged in
+    // 🔐 Auth Check
     if (!session || !session.user?.id) {
       return NextResponse.json(
-        { error: "Unauthorized" },
+        errorResponse("Unauthorized"),
         { status: 401 }
       );
     }
 
-    const { topic } = await req.json();
+    const body = await req.json();
 
-    if (!topic) {
-      return NextResponse.json(
-        { error: "Topic is required" },
-        { status: 400 }
-      );
-    }
+    // ✅ Zod Validation
+    const validatedData = createCourseSchema.parse(body);
 
-    // 🔥 Generate + Save
+    // 🔥 Service Call
     const course = await generateAndSaveLearningModule(
-      topic,
+      validatedData.topic,
       session.user.id
     );
 
-    // ✅ IMPORTANT: return full course (includes id)
-    return NextResponse.json(course, { status: 201 });
-  } catch (error) {
-    console.error(error);
-
+    // ✅ Standard Response
     return NextResponse.json(
-      { error: "Failed to generate course" },
-      { status: 500 }
+      successResponse(course),
+      { status: 201 }
     );
-  }
+  });
 }

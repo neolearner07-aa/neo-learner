@@ -1,62 +1,48 @@
 import { NextResponse } from "next/server";
-import { findUserByEmail, createUser } from "@/services/auth/user.service";
+
+import { withErrorHandler } from "@/lib/error-handler";
+import { successResponse, errorResponse } from "@/lib/api-response";
+
+import { signupSchema } from "@/validators/auth";
+
+import {
+  findUserByEmail,
+  createUser,
+} from "@/services/auth/user.service";
+
 import { hashPassword } from "@/lib/auth";
 
 export async function POST(req: Request) {
-  try {
-    const { email, password } = await req.json();
+  return withErrorHandler(async () => {
+    const body = await req.json();
 
-    // 1. Validate input
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Email and password are required" },
-        { status: 400 }
-      );
-    }
+    // ✅ Zod Validation
+    const validatedData = signupSchema.parse(body);
 
-    if (!email.includes("@")) {
-      return NextResponse.json(
-        { error: "Invalid email format" },
-        { status: 400 }
-      );
-    }
+    const { email, password } = validatedData;
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
-        { status: 400 }
-      );
-    }
-
-    // 2. Check if user exists (IMPORTANT: await)
+    // 🔍 Check existing user
     const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "User already exists" },
+        errorResponse("User already exists"),
         { status: 400 }
       );
     }
 
-    // 3. Hash password
+    // 🔐 Hash password
     const hashedPassword = await hashPassword(password);
 
-    // 4. Create user in DATABASE ✅
+    // 💾 Create user
     await createUser({
       email,
       password: hashedPassword,
     });
 
     return NextResponse.json(
-      { message: "User created successfully" },
+      successResponse({ message: "User created successfully" }),
       { status: 201 }
     );
-  } catch (error) {
-    console.error(error);
-
-    return NextResponse.json(
-      { error: "Something went wrong" },
-      { status: 500 }
-    );
-  }
+  });
 }
