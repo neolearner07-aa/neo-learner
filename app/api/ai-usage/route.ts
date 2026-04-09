@@ -29,7 +29,7 @@ export async function POST() {
         data: {
           userId,
           count: 1,
-          lastUsed: new Date(),
+          credits: 2, // ✅ Start with 3 → 1 used → 2 left
         },
       });
 
@@ -40,8 +40,11 @@ export async function POST() {
     const updated = await prisma.aIUsage.update({
       where: { userId },
       data: {
-        count: existing.count + 1,
-        lastUsed: new Date(),
+        count: {
+          increment: 1,
+        },
+        // ❌ removed lastUsed
+        // ✅ updatedAt handled automatically
       },
     });
 
