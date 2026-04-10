@@ -10,6 +10,7 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 
 import { createCourseSchema } from "@/validators/course";
 import { generateAndSaveLearningModule } from "@/services/learn/learn-generator";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   return withErrorHandler(async () => {
@@ -20,6 +21,15 @@ export async function POST(req: Request) {
       return NextResponse.json(
         errorResponse("Unauthorized"),
         { status: 401 }
+      );
+    }
+
+    const allowed = await rateLimit(session.user.id);
+
+    if (!allowed) {
+      return NextResponse.json(
+        errorResponse("Too many requests"),
+        { status: 429 }
       );
     }
 

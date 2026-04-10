@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, Course } from "@prisma/client";
+import { getCache, setCache } from "@/lib/cache";
 
+/**
+ * Create Course (NO CACHE HERE — WRITE OPERATION)
+ */
 export const createCourse = async ({
   title,
   description,
@@ -12,7 +16,7 @@ export const createCourse = async ({
   content: Prisma.InputJsonValue;
   userId: string;
 }) => {
-  return await prisma.course.create({
+  const newCourse = await prisma.course.create({
     data: {
       title,
       description,
@@ -20,10 +24,36 @@ export const createCourse = async ({
       createdById: userId,
     },
   });
+
+  /**
+   * ⚠️ IMPORTANT: Invalidate cache after creating course
+   */
+  const cacheKey = `courses:user:${userId}`;
+  await setCache(cacheKey, null, 1); // expire immediately
+
+  return newCourse;
 };
 
-export const getCoursesByUser = async (userId: string) => {
-  return await prisma.course.findMany({
+/**
+ * Get Courses By User (CACHED)
+ */
+export const getCoursesByUser = async (
+  userId: string
+): Promise<Course[]> => {
+  const cacheKey = `courses:user:${userId}`;
+
+  // 1. Check cache
+  const cached = await getCache<Course[]>(cacheKey);
+
+  if (cached) {
+    console.log("⚡ Cache HIT: User Courses");
+    return cached;
+  }
+
+  console.log("🐢 Cache MISS: Fetching from DB");
+
+  // 2. Fetch from DB
+  const courses = await prisma.course.findMany({
     where: {
       createdById: userId,
     },
@@ -31,4 +61,9 @@ export const getCoursesByUser = async (userId: string) => {
       createdAt: "desc",
     },
   });
+
+  // 3. Store in cache (TTL: 1 hour)
+  await setCache(cacheKey, courses, 3600);
+
+  return courses;
 };

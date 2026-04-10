@@ -1,4 +1,5 @@
 import { FeedItem } from "@/types/feed";
+import { getCache, setCache } from "@/lib/cache";
 
 /**
  * Shuffle array (Fisher-Yates)
@@ -15,9 +16,23 @@ function shuffle(array: FeedItem[]): FeedItem[] {
 }
 
 /**
- * Generate Feed with Basic Ranking
+ * Generate Feed with Basic Ranking (CACHED)
  */
-export function generateFeed(topic?: string): FeedItem[] {
+export async function generateFeed(
+  topic?: string
+): Promise<FeedItem[]> {
+  const cacheKey = `feed:${topic || "default"}`;
+
+  // 1. Check cache
+  const cached = await getCache<FeedItem[]>(cacheKey);
+
+  if (cached) {
+    console.log("⚡ Feed Cache HIT");
+    return cached;
+  }
+
+  console.log("🐢 Feed Cache MISS → Generating");
+
   const baseTopics = [
     topic || "JavaScript",
     "Python",
@@ -69,6 +84,9 @@ export function generateFeed(topic?: string): FeedItem[] {
 
   // 2. Shuffle slightly to avoid monotony
   feed = shuffle(feed);
+
+  // 3. Store in cache (TTL: 10 minutes)
+  await setCache(cacheKey, feed, 600);
 
   return feed;
 }

@@ -6,13 +6,17 @@ import { runAI } from "@/services/ai/orchestrator";
 import { withErrorHandler } from "@/lib/error-handler";
 import { errorResponse } from "@/lib/api-response";
 
+import { rateLimit } from "@/lib/rate-limit";
+
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../auth/[...nextauth]/route";
+
 import { z } from "zod";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// ✅ Match EXACT AIType
 const chatSchema = z.object({
   message: z.string().min(1, "Message is required"),
   type: z
@@ -22,13 +26,29 @@ const chatSchema = z.object({
 
 export async function POST(req: NextRequest) {
   return withErrorHandler(async () => {
+    const session = await getServerSession(authOptions);
+
+    // 🔐 Auth check
+    if (!session || !session.user?.id) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    // 🚨 RATE LIMIT CHECK
+    const allowed = await rateLimit(userId);
+
+    if (!allowed) {
+      return new Response("Too many requests. Try again later.", {
+        status: 429,
+      });
+    }
+
     const body = await req.json();
 
-    // ✅ Validate input
     const validated = chatSchema.parse(body);
     const { message, type } = validated;
 
-    // 🔥 Try OpenAI Streaming FIRST
     try {
       const stream = await openai.chat.completions.create({
         model: "gpt-4o-mini",
@@ -61,7 +81,6 @@ export async function POST(req: NextRequest) {
     } catch (streamError) {
       console.warn("Streaming failed, using fallback AI...");
 
-      // 🔥 Fallback to orchestrator
       const response = await runAI(type || "general", message);
 
       return new Response(response, {

@@ -6,7 +6,6 @@ import Spinner from "@/components/ui/spinner";
 import FeedCard from "@/components/feed/feed-card";
 import VideoCard from "@/components/feed/video-card";
 
-import { generateFeed } from "@/services/feed/feed-generator";
 import { FeedItem } from "@/types/feed";
 
 export default function FeedPage() {
@@ -14,11 +13,27 @@ export default function FeedPage() {
   const [feed, setFeed] = useState<FeedItem[]>([]);
 
   useEffect(() => {
+    const fetchFeed = async () => {
+      try {
+        const res = await fetch("/api/feed");
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch feed");
+        }
+
+        const data: FeedItem[] = await res.json();
+
+        setFeed(data);
+      } catch (error) {
+        console.error("Feed Fetch Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Optional delay to preserve UX feel
     const timer = setTimeout(() => {
-      // 🔥 Generate feed (mock for now)
-      const data = generateFeed();
-      setFeed(data);
-      setLoading(false);
+      fetchFeed();
     }, 800);
 
     return () => clearTimeout(timer);
@@ -26,7 +41,6 @@ export default function FeedPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl mx-auto">
-    
       {/* Title */}
       <h1 className="text-2xl font-semibold text-white">
         📚 Learning Feed
@@ -56,7 +70,7 @@ export default function FeedPage() {
                   tags={item.tags}
                 />
               );
-            };
+            }
 
             if (item.type === "video") {
               return (
@@ -69,8 +83,8 @@ export default function FeedPage() {
               );
             }
 
-              return null;
-           })}
+            return null;
+          })}
         </div>
       )}
     </div>

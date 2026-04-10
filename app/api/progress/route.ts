@@ -10,6 +10,7 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 
 import { progressSchema } from "@/validators/progress";
 import { updateProgressSchema } from "@/validators/progress";
+import { rateLimit } from "@/lib/rate-limit";
 
 import {
   getProgress,
@@ -28,6 +29,15 @@ export async function GET(req: Request) {
       return NextResponse.json(
         errorResponse("Unauthorized"),
         { status: 401 }
+      );
+    }
+
+    const allowed = await rateLimit(session.user.id);
+
+    if (!allowed) {
+      return NextResponse.json(
+        errorResponse("Too many requests"),
+        { status: 429 }
       );
     }
 
