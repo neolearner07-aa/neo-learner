@@ -8,27 +8,25 @@ import Input from "@/components/ui/input";
 import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 
+import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
+
 export default function TutorPage() {
   const router = useRouter();
 
-  // 🧠 Form State
   const [goal, setGoal] = useState("");
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("");
-
   const [loading, setLoading] = useState(false);
 
-  /**
-   * Handle Generate Plan
-   */
+  // ⚠️ Replace with real auth later
+  const userId = "temp-user";
+
   const handleGenerate = async () => {
-    // ❌ Validation
     if (!goal.trim() || !time.trim() || !duration.trim()) {
       alert("⚠️ Please fill all fields properly");
       return;
     }
 
-    // Extra validation
     if (isNaN(Number(time))) {
       alert("⚠️ Time must be a number (hours per day)");
       return;
@@ -37,20 +35,23 @@ export default function TutorPage() {
     try {
       setLoading(true);
 
-      // 👉 Temporary: Just simulate navigation
-      // Later we will generate real plan
       const fakePlanId = Date.now().toString();
+
+      // ✅ ✅ ✅ MEMORY TRACKING (TUTOR INTENT)
+      if (userId && goal) {
+        trackUserActivity(userId, "tutor", goal);
+      }
 
       router.push(`/tutor/${fakePlanId}`);
     } catch (error: unknown) {
-        console.error("Error generating plan:", error);
+      console.error("Error generating plan:", error);
 
-        if (error instanceof Error) {
-          alert(`❌ Error: ${error.message}`);
-        } else {
-          alert("❌ Something went wrong while generating your plan");
-        }
-      } finally {
+      if (error instanceof Error) {
+        alert(`❌ Error: ${error.message}`);
+      } else {
+        alert("❌ Something went wrong while generating your plan");
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -67,28 +68,24 @@ export default function TutorPage() {
           Create your personalized AI study plan
         </p>
 
-        {/* Goal */}
         <Input
           placeholder="Your Goal (e.g., Crack JEE, Learn Python)"
           value={goal}
           onChange={(e) => setGoal(e.target.value)}
         />
 
-        {/* Time per day */}
         <Input
           placeholder="Hours per day (e.g., 2)"
           value={time}
           onChange={(e) => setTime(e.target.value)}
         />
 
-        {/* Duration */}
         <Input
           placeholder="Duration (e.g., 30 days)"
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
         />
 
-        {/* Button */}
         <Button onClick={handleGenerate} disabled={loading}>
           {loading ? (
             <div className="flex items-center gap-2">

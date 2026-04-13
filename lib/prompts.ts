@@ -1,3 +1,5 @@
+import { getWeakTopics, getStrongTopics } from "@/services/memory/memory.service";
+
 /**
  * Prompt System for NeoLearner
  * Defines structured AI behaviors
@@ -205,19 +207,60 @@ Rules:
 `;
 
 /**
- * Function to combine system prompt + user input
+ * Function to combine system prompt + user input + MEMORY
  */
-export function buildPrompt(
+export async function buildPrompt(
   type: "general" | "tutor" | "learning" | "solve" | "arena" | "course",
-  userInput: string
-): string {
+  userInput: string,
+  userId?: string
+): Promise<string> {
   let basePrompt = GENERAL_PROMPT;
 
   if (type === "tutor") basePrompt = TUTOR_PROMPT;
   if (type === "learning") basePrompt = LEARNING_PROMPT;
   if (type === "solve") basePrompt = SOLVE_PROMPT;
   if (type === "arena") basePrompt = ARENA_PROMPT;
-  if (type === "solve") basePrompt = SOLVE_PROMPT;
+  if (type === "course") basePrompt = COURSE_PROMPT;
 
-  return `${basePrompt}\n\nTopic: ${userInput}`;
+  // ==============================
+  // 🧠 MEMORY INJECTION
+  // ==============================
+  let memoryContext = "";
+
+  if (userId) {
+    try {
+      const [weakTopics, strongTopics] = await Promise.all([
+        getWeakTopics(userId),
+        getStrongTopics(userId),
+      ]);
+
+      const weak = weakTopics.map((t) => t.topic).join(", ");
+      const strong = strongTopics.map((t) => t.topic).join(", ");
+
+      memoryContext = `
+User Learning Profile:
+- Weak in: ${weak || "None"}
+- Strong in: ${strong || "None"}
+
+Personalization Rules:
+- Explain weak topics more deeply
+- Use simpler explanations for weak areas
+- Be concise for strong topics
+- Adjust difficulty dynamically
+`;
+    } catch (error) {
+      console.error("Memory Injection Failed:", error);
+    }
+  }
+
+  // ==============================
+  // 🎯 FINAL PROMPT
+  // ==============================
+  return `
+${memoryContext}
+
+${basePrompt}
+
+Topic: ${userInput}
+`;
 }

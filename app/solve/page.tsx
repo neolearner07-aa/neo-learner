@@ -14,6 +14,7 @@ import { parseSolution } from "@/services/solve/parse-solution";
 import { SolveResponse } from "@/types/solve";
 import SolutionView from "@/components/solve/solution-view";
 import { splitQuestions } from "@/services/solve/split-questions";
+import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
 
 type Role =
   | "teacher"
@@ -22,7 +23,6 @@ type Role =
   | "programmer";
 
 export default function SolvePage() {
-  // 🧠 STATE MANAGEMENT
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [solutions, setSolutions] = useState<SolveResponse[]>([]);
@@ -33,7 +33,27 @@ export default function SolvePage() {
   const [error, setError] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
 
-  // 🚀 HANDLE SOLVE CLICK
+  // ⚠️ Replace with real auth later
+  const userId = "temp-user";
+
+  /**
+   * 🧠 VERY BASIC TOPIC DETECTION (SAFE VERSION)
+   * You can upgrade later using AI
+   */
+  function detectTopic(question: string): string {
+    if (!question) return "General";
+
+    const q = question.toLowerCase();
+
+    if (q.includes("integral") || q.includes("derivative")) return "Calculus";
+    if (q.includes("equation") || q.includes("x") || q.includes("algebra")) return "Algebra";
+    if (q.includes("force") || q.includes("velocity")) return "Physics";
+    if (q.includes("reaction") || q.includes("molecule")) return "Chemistry";
+    if (q.includes("code") || q.includes("function")) return "Programming";
+
+    return "General";
+  }
+
   const handleSolve = async () => {
     if (!input.trim() && !image) {
       setError("Please enter a problem or upload an image.");
@@ -51,30 +71,35 @@ export default function SolvePage() {
     try {
       let finalInput = input;
 
-      // 🧠 OCR (if only image is provided)
+      // 🧠 OCR
       if (!input.trim() && image) {
         setOcrLoading(true);
-
         finalInput = await extractTextFromImage(image);
-
         setOcrLoading(false);
       }
 
-      // 🧠 MULTI-QUESTION SPLIT
       const questions = splitQuestions(finalInput);
-
       const results: SolveResponse[] = [];
 
-      // 🔁 LOOP OVER QUESTIONS
       for (const question of questions) {
         const aiResult = await generateSolution(question, finalRole);
-
         const parsed = parseSolution(aiResult);
 
         if (parsed) {
           results.push(parsed);
         } else {
-          setRawResponse(aiResult); // fallback
+          setRawResponse(aiResult);
+        }
+
+        // ✅ ✅ ✅ MEMORY TRACKING (SOLVE MODE)
+        if (userId && question) {
+          const topic = detectTopic(question);
+
+          // optional score logic (basic)
+          const score = parsed ? 1 : 0;
+
+          // 🔥 NON-BLOCKING (do NOT await)
+          trackUserActivity(userId, "solve", topic, score);
         }
       }
 
@@ -111,7 +136,6 @@ export default function SolvePage() {
       <Card>
         <div className="space-y-5">
           
-          {/* Problem Input */}
           <div>
             <p className="text-sm text-gray-400 mb-2">
               Enter Problem (optional if using image):
@@ -123,7 +147,6 @@ export default function SolvePage() {
             />
           </div>
 
-          {/* Image Upload */}
           <div>
             <p className="text-sm text-gray-400 mb-2">
               Upload Image (optional):
@@ -131,15 +154,13 @@ export default function SolvePage() {
             <ImageUpload onImageSelect={setImage} />
           </div>
 
-          {/* OCR Loading State */}
           {ocrLoading && (
             <div className="flex items-center gap-2 text-sm text-cyan-400">
-            <Spinner />
+              <Spinner />
               Extracting text from image...
             </div>
           )}
 
-          {/* Role Selector */}
           <div>
             <p className="text-sm text-gray-400 mb-2">
               Select Role:
@@ -147,7 +168,6 @@ export default function SolvePage() {
             <RoleSelector selected={role} onChange={setRole} />
           </div>
 
-          {/* Custom Role */}
           <div>
             <p className="text-sm text-gray-400 mb-2">
               Or type custom role:
@@ -166,14 +186,12 @@ export default function SolvePage() {
             )}
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="bg-red-500/10 border border-red-400/30 p-3 rounded-xl text-sm text-red-400">
               {error}
             </div>
           )}
 
-          {/* Solve Button */}
           <Button
             onClick={handleSolve}
             disabled={loading || (!input.trim() && !image)}
@@ -181,7 +199,7 @@ export default function SolvePage() {
             {loading ? (
               <div className="flex items-center gap-2">
                 <Spinner />
-                  Solving your problem...
+                Solving your problem...
               </div>
             ) : (
               "Solve"
@@ -190,30 +208,28 @@ export default function SolvePage() {
         </div>
       </Card>
 
-          {/* Input Preview */}
-          {(input || image) && (
-            <Card>
-              <div className="text-sm text-gray-300 space-y-2">
+      {(input || image) && (
+        <Card>
+          <div className="text-sm text-gray-300 space-y-2">
       
-                {input && (
-                  <div>
-                    <p className="text-cyan-400 font-medium">Your Input:</p>
-                    <p>{input}</p>
-                  </div>
-                )}
-
-                {image && (
-                  <div>
-                    <p className="text-cyan-400 font-medium">Image Selected:</p>
-                    <p className="text-xs text-gray-400">{image.name}</p>
-                  </div>
-                )}
-
+            {input && (
+              <div>
+                <p className="text-cyan-400 font-medium">Your Input:</p>
+                <p>{input}</p>
               </div>
-            </Card>
-          )}
+            )}
 
-      {/* ✅ FINAL OUTPUT */}
+            {image && (
+              <div>
+                <p className="text-cyan-400 font-medium">Image Selected:</p>
+                <p className="text-xs text-gray-400">{image.name}</p>
+              </div>
+            )}
+
+          </div>
+        </Card>
+      )}
+
       <SolutionView solutions={solutions} rawResponse={rawResponse} />
     </div>
   );

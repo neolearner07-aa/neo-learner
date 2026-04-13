@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import CoursePlayer from "@/components/courses/course-player";
 import Spinner from "@/components/ui/spinner";
 import Card from "@/components/ui/card";
 
 import { Course } from "@/types/course";
+import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
 
 export default function CoursePage() {
   const [course] = useState<Course | null>(() => {
@@ -18,6 +19,16 @@ export default function CoursePage() {
       return null;
     }
   });
+
+  // ⚠️ Replace later
+  const userId = "temp-user";
+
+  // ✅ ✅ MEMORY TRACKING (COURSE VIEW)
+  useEffect(() => {
+    if (!course || !userId) return;
+
+    trackUserActivity(userId, "course", course.title);
+  }, [course, userId]);
 
   if (!course) {
     return (

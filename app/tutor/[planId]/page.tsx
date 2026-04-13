@@ -11,14 +11,11 @@ import Spinner from "@/components/ui/spinner";
 import Card from "@/components/ui/card";
 
 import { StudyPlan } from "@/types/tutor";
+import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
 
-/**
- * Temporary Mock Plan (DEV MODE)
- */
 const mockPlan: StudyPlan = {
   goal: "Learn Python",
   duration: "30 days",
-
   topics: [
     { id: "1", title: "Python Basics" },
     { id: "2", title: "Data Types" },
@@ -26,7 +23,6 @@ const mockPlan: StudyPlan = {
     { id: "4", title: "Functions" },
     { id: "5", title: "OOP Basics" },
   ],
-
   dailyPlan: [
     { day: 1, tasks: ["Install Python", "Write first program"] },
     { day: 2, tasks: ["Learn variables", "Practice exercises"] },
@@ -34,7 +30,6 @@ const mockPlan: StudyPlan = {
     { day: 4, tasks: ["Loops", "Solve problems"] },
     { day: 5, tasks: ["Functions", "Practice coding"] },
   ],
-
   weeklyPlan: [
     { week: 1, focus: "Python Fundamentals" },
     { week: 2, focus: "Intermediate Concepts" },
@@ -48,12 +43,22 @@ export default function PlanPage() {
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // ⚠️ Replace with real auth later
+  const userId = "temp-user";
+
   useEffect(() => {
     setTimeout(() => {
       setPlan(mockPlan);
       setLoading(false);
     }, 800);
   }, []);
+
+  // ✅ ✅ ✅ MEMORY TRACKING (PLAN INTERACTION)
+  useEffect(() => {
+    if (!plan || !userId) return;
+
+    trackUserActivity(userId, "tutor", plan.goal);
+  }, [plan, userId]);
 
   if (loading) {
     return (
@@ -76,13 +81,8 @@ export default function PlanPage() {
   return (
     <div className="min-h-screen p-6 flex flex-col gap-6">
 
-      {/* Study Plan */}
       <StudyPlanView plan={plan} />
-
-      {/* Progress Tracker */}
       <ProgressTracker plan={plan} />
-
-      {/* AI Coaching */}
       <CoachingBox plan={plan} />
 
     </div>

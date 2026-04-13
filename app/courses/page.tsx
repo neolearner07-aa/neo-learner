@@ -15,12 +15,17 @@ import { fadeIn, transition } from "@/lib/animations";
 import { generateCourse } from "@/services/courses/course-generator";
 import { Course } from "@/types/course";
 
+import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
+
 export default function CoursesPage() {
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
 
   const router = useRouter();
+
+  // ⚠️ Replace later with real auth
+  const userId = "temp-user";
 
   const handleGenerate = async () => {
     if (!topic.trim()) return;
@@ -32,6 +37,12 @@ export default function CoursesPage() {
 
       setCourses((prev) => [newCourse, ...prev]);
       setTopic("");
+
+      // ✅ ✅ MEMORY TRACKING (COURSE GENERATION)
+      if (userId && topic) {
+        trackUserActivity(userId, "course", topic);
+      }
+
     } catch (error) {
       console.error("Failed to generate course:", error);
       alert("Something went wrong while generating course.");
@@ -42,13 +53,15 @@ export default function CoursesPage() {
 
   const handleStartCourse = (courseId: string) => {
     const course = courses.find((c) => c.id === courseId);
-
     if (!course) return;
 
-    // Save to localStorage
     localStorage.setItem("currentCourse", JSON.stringify(course));
 
-    // Navigate
+    // ✅ ✅ MEMORY TRACKING (COURSE START)
+    if (userId && course.title) {
+      trackUserActivity(userId, "course", course.title);
+    }
+
     router.push(`/courses/${courseId}`);
   };
 
@@ -62,7 +75,6 @@ export default function CoursesPage() {
     >
       <h1 className="text-3xl font-bold text-white">📚 Courses</h1>
 
-      {/* Generate Course */}
       <Card className="flex flex-col gap-4">
         <h2 className="text-xl text-white font-semibold">
           Generate New Course
@@ -78,7 +90,6 @@ export default function CoursesPage() {
           {loading ? <Spinner /> : "Generate Course"}
         </Button>
 
-        {/* ✅ Loading Message */}
         {loading && (
           <div className="flex items-center gap-2 text-sm text-gray-400">
             <Spinner />
@@ -87,7 +98,6 @@ export default function CoursesPage() {
         )}
       </Card>
 
-      {/* Courses List */}
       {courses.length === 0 ? (
         <div className="text-gray-400 text-center">
           No courses yet. Generate one 🚀

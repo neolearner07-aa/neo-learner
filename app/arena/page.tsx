@@ -22,6 +22,7 @@ import {
 import { getUnlockedAchievements } from "@/services/arena/achievements";
 
 import { Quiz, PlayerStats } from "@/types/arena";
+import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
 
 type Score = {
   xp: number;
@@ -40,7 +41,25 @@ export default function ArenaPage() {
   const [finished, setFinished] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
 
-  // Load Quiz AFTER clicking start
+  // ⚠️ Replace with real auth later
+  const userId = "temp-user";
+
+  // 🧠 Debounce tracking (VERY IMPORTANT for Arena)
+  let trackTimeout: NodeJS.Timeout;
+
+  function debouncedTrack(
+    userId: string,
+    type: string,
+    topic: string,
+    score: number
+  ) {
+    clearTimeout(trackTimeout);
+    trackTimeout = setTimeout(() => {
+      trackUserActivity(userId, type, topic, score);
+    }, 300);
+  }
+
+  // Load Quiz
   useEffect(() => {
     if (!started) return;
 
@@ -75,6 +94,14 @@ export default function ArenaPage() {
 
       return updated;
     });
+
+    // ✅ ✅ ✅ MEMORY TRACKING (ARENA MODE — CRITICAL)
+    if (userId && topic) {
+      const score = isCorrect ? 1 : 0;
+
+      // ⚡ Debounced (prevents API spam)
+      debouncedTrack(userId, "arena", topic, score);
+    }
   };
 
   const handleNext = () => {
@@ -106,7 +133,6 @@ export default function ArenaPage() {
 
   const achievements = getUnlockedAchievements(stats);
 
-  // 🎯 ENTRY UI (IMPORTANT FIX)
   if (!started) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -129,7 +155,6 @@ export default function ArenaPage() {
     );
   }
 
-  // 🔄 Loading
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -143,7 +168,6 @@ export default function ArenaPage() {
     );
   }
 
-  // ❌ Error
   if (error || !quiz) {
     return (
       <div className="flex items-center justify-center min-h-screen">

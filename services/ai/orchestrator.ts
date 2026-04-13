@@ -2,8 +2,7 @@ import { openaiChat } from "./openai";
 import { geminiChat } from "./gemini";
 import { buildPrompt } from "@/lib/prompts";
 import { incrementAIUsage } from "./ai-usage.service";
-import { consumeAICredit } from "././ai-credit.service"; // ✅ NEW
-
+import { consumeAICredit } from "./ai-credit.service"; // ✅ FIXED PATH
 import { mockAI } from "./mock";
 
 /**
@@ -38,7 +37,7 @@ function selectModel(userInput: string): "openai" | "gemini" {
 }
 
 /**
- * Main Orchestrator with Failover + Credits System
+ * Main Orchestrator with Failover + Credits + Memory Personalization
  */
 export async function runAI(
   type: AIType,
@@ -68,7 +67,10 @@ export async function runAI(
       return await mockAI(userInput);
     }
 
-    const prompt = buildPrompt(type, userInput);
+    // ==============================
+    // 🧠 STEP 2: BUILD PROMPT (WITH MEMORY)
+    // ==============================
+    const prompt = await buildPrompt(type, userInput, userId); // ✅ CRITICAL FIX
 
     const primaryModel = selectModel(userInput);
     const fallbackModel =
@@ -79,7 +81,7 @@ export async function runAI(
 
     try {
       // ==============================
-      // 🔥 PRIMARY MODEL
+      // 🚀 PRIMARY MODEL
       // ==============================
       if (primaryModel === "openai") {
         return await openaiChat(prompt);
@@ -95,7 +97,7 @@ export async function runAI(
 
       try {
         // ==============================
-        // 🔥 FALLBACK MODEL
+        // 🔁 FALLBACK MODEL
         // ==============================
         if (fallbackModel === "openai") {
           return await openaiChat(prompt);

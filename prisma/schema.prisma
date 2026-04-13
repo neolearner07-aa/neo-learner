@@ -14,9 +14,11 @@ model User {
   password  String?
   createdAt DateTime @default(now())
 
-  courses   Course[]
-  progress  Progress[]
-  aiUsage   AIUsage[]
+  courses    Course[]
+  progress   Progress[]
+  aiUsage    AIUsage[]
+  memories   UserMemory[]
+  activities UserActivity[]
 }
 
 model Course {
@@ -27,17 +29,17 @@ model Course {
   createdAt   DateTime @default(now())
 
   createdById String
-  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdBy   User   @relation(fields: [createdById], references: [id])
 
-  progress    Progress[]
+  progress Progress[]
 }
 
 model Progress {
-  id                String   @id @default(uuid())
-  userId            String
-  courseId          String
-  completedLessons  Json
-  progressPercent   Int
+  id               String @id @default(uuid())
+  userId           String
+  courseId         String
+  completedLessons Json
+  progressPercent  Int
 
   user   User   @relation(fields: [userId], references: [id])
   course Course @relation(fields: [courseId], references: [id])
@@ -46,9 +48,33 @@ model Progress {
 model AIUsage {
   id        String   @id @default(uuid())
   userId    String   @unique
-  count     Int      @default(0)     // total usage (analytics)
-  credits   Int      @default(3)     // 🎯 NEW: usable credits
+  count     Int      @default(0) // total usage (analytics)
+  credits   Int      @default(3) // 🎯 NEW: usable credits
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model UserMemory {
+  id           String   @id @default(cuid())
+  userId       String
+  topic        String
+  proficiency  Float    @default(0)
+  lastAccessed DateTime @updatedAt
+  interactions Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, topic])
+}
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  topic     String
+  score     Float?
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 }
