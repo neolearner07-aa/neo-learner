@@ -73,7 +73,6 @@ export default function LearnPage() {
 
         <FileUpload userId={userId} />
         <FileList
-          userId={userId}
           onSelectionChange={setSelectedFiles}
         />
       </Card>

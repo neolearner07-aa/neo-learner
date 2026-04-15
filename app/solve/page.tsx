@@ -186,7 +186,6 @@ ${
 
             <FileUpload userId={userId} />
             <FileList
-              userId={userId}
               onSelectionChange={setSelectedFiles}
             />
           </div>

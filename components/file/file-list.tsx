@@ -11,68 +11,75 @@ type FileContent = {
 };
 
 export default function FileList({
-  userId,
-  onSelectionChange, // ✅ NEW (optional)
+  onSelectionChange,
 }: {
-  userId: string;
   onSelectionChange?: (ids: string[]) => void;
 }) {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ NEW: selected files
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
-
-  // ✅ NEW: deleting state (better UX)
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
+  // ✅ Fetch files (SECURE — no userId from client)
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const res = await fetch(`/api/files?userId=${userId}`);
+        const res = await fetch(`/api/files`);
+
         const data = await res.json();
 
-        if (data.success) {
-          setFiles(data.data);
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Failed to fetch files");
         }
+
+        setFiles(data.data || []);
       } catch (error) {
-        console.error("Failed to fetch files", error);
+        console.error("Failed to fetch files:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchFiles();
-  }, [userId]);
+  }, []);
 
-  // ✅ Notify parent (VERY IMPORTANT for File-Aware AI)
+  // ✅ Notify parent (File-Aware AI integration)
   useEffect(() => {
-    if (onSelectionChange) {
-      onSelectionChange(selectedFiles);
-    }
+    onSelectionChange?.(selectedFiles);
   }, [selectedFiles, onSelectionChange]);
 
-  if (loading)
+  if (loading) {
     return <p className="text-gray-400 text-sm">Loading files...</p>;
+  }
 
-  if (!files.length)
+  if (!files.length) {
     return (
       <p className="text-gray-400 text-sm">
         No files uploaded yet.
       </p>
     );
+  }
 
+  // ✅ Delete handler (SECURE)
   const handleDelete = async (fileId: string) => {
     try {
       setDeletingId(fileId);
 
-      await fetch(`/api/files?fileId=${fileId}&userId=${userId}`, {
+      const res = await fetch(`/api/files?fileId=${fileId}`, {
         method: "DELETE",
       });
 
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Delete failed");
+      }
+
+      // remove from UI
       setFiles((prev) => prev.filter((f) => f.id !== fileId));
 
-      // also remove from selected
+      // remove from selected
       setSelectedFiles((prev) => prev.filter((id) => id !== fileId));
     } catch (err) {
       console.error(err);
@@ -91,20 +98,19 @@ export default function FileList({
     );
   };
 
-  // ✅ NEW: Select All
+  // ✅ Select All
   const handleSelectAll = () => {
     setSelectedFiles(files.map((f) => f.id));
   };
 
-  // ✅ NEW: Clear Selection
+  // ✅ Clear Selection
   const handleClearSelection = () => {
     setSelectedFiles([]);
   };
 
   return (
     <div className="space-y-4">
-
-      {/* ✅ TOP ACTION BAR */}
+      {/* TOP BAR */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-400">
           {selectedFiles.length} selected
@@ -113,14 +119,16 @@ export default function FileList({
         <div className="flex gap-2">
           <Button
             onClick={handleSelectAll}
-            className="text-xs px-3 py-1 bg-cyan-500/80 hover:bg-cyan-600 text-white rounded-lg"
+            disabled={files.length === 0}
+            className="text-xs px-3 py-1 bg-cyan-500/80 hover:bg-cyan-600 text-white rounded-lg disabled:opacity-50"
           >
             Select All
           </Button>
 
           <Button
             onClick={handleClearSelection}
-            className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg"
+            disabled={selectedFiles.length === 0}
+            className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
           >
             Clear
           </Button>
@@ -128,7 +136,7 @@ export default function FileList({
       </div>
 
       {files.map((file) => {
-        const content = file.content as FileContent | null;
+        const content = (file.content || {}) as FileContent;
         const isSelected = selectedFiles.includes(file.id);
 
         return (
@@ -140,11 +148,10 @@ export default function FileList({
                 : "border-white/10"
             }`}
           >
-            {/* Top Row */}
+            {/* HEADER */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-3">
-
-                {/* ✅ Checkbox */}
+                {/* Checkbox */}
                 <input
                   type="checkbox"
                   checked={isSelected}
@@ -162,7 +169,7 @@ export default function FileList({
                 </div>
               </div>
 
-              {/* ❌ Delete */}
+              {/* DELETE */}
               <Button
                 onClick={() => handleDelete(file.id)}
                 disabled={deletingId === file.id}
@@ -172,17 +179,18 @@ export default function FileList({
               </Button>
             </div>
 
-            {/* 📄 Summary */}
-            {content?.summary && (
+            {/* SUMMARY */}
+            {content.summary && (
               <p className="text-sm text-gray-300 line-clamp-3">
                 {content.summary}
               </p>
             )}
 
-            {/* 🔗 View */}
+            {/* VIEW FILE */}
             <a
               href={file.fileUrl}
               target="_blank"
+              rel="noopener noreferrer"
               className="text-cyan-400 text-xs hover:underline"
             >
               View File →

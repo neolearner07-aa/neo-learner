@@ -94,7 +94,6 @@ export default function TutorPage() {
 
           {/* ✅ CONNECTED TO GLOBAL FILE SELECTION */}
           <FileList
-            userId={userId}
             onSelectionChange={setSelectedFiles}
           />
         </div>
