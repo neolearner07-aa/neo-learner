@@ -8,13 +8,20 @@ import Badge from "@/components/ui/badge";
 import Spinner from "@/components/ui/spinner";
 import RoleSelector from "@/components/solve/role-selector";
 import ImageUpload from "@/components/solve/image-upload";
+
+import FileUpload from "@/components/file/file-upload";
+import FileList from "@/components/file/file-list";
+
 import { extractTextFromImage } from "@/services/solve/ocr";
 import { generateSolution } from "@/services/solve/solve-generator";
 import { parseSolution } from "@/services/solve/parse-solution";
 import { SolveResponse } from "@/types/solve";
 import SolutionView from "@/components/solve/solution-view";
 import { splitQuestions } from "@/services/solve/split-questions";
-import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
+import { trackUserActivity } from "@/services/memory/client-tracking";
+
+// ✅ NEW: Zustand store
+import { useFileStore } from "@/store/file-store";
 
 type Role =
   | "teacher"
@@ -33,22 +40,20 @@ export default function SolvePage() {
   const [error, setError] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
 
-  // ⚠️ Replace with real auth later
   const userId = "temp-user";
 
-  /**
-   * 🧠 VERY BASIC TOPIC DETECTION (SAFE VERSION)
-   * You can upgrade later using AI
-   */
+  // ✅ NEW: selected files
+  const { selectedFileIds } = useFileStore();
+
   function detectTopic(question: string): string {
     if (!question) return "General";
 
     const q = question.toLowerCase();
 
     if (q.includes("integral") || q.includes("derivative")) return "Calculus";
-    if (q.includes("equation") || q.includes("x") || q.includes("algebra")) return "Algebra";
+    if (q.includes("equation") || q.includes("x")) return "Algebra";
     if (q.includes("force") || q.includes("velocity")) return "Physics";
-    if (q.includes("reaction") || q.includes("molecule")) return "Chemistry";
+    if (q.includes("reaction")) return "Chemistry";
     if (q.includes("code") || q.includes("function")) return "Programming";
 
     return "General";
@@ -78,11 +83,25 @@ export default function SolvePage() {
         setOcrLoading(false);
       }
 
+      // ✅ DEBUG (important for File-Aware AI)
+      console.log("Selected Files:", selectedFileIds);
+
       const questions = splitQuestions(finalInput);
       const results: SolveResponse[] = [];
 
       for (const question of questions) {
-        const aiResult = await generateSolution(question, finalRole);
+        // ✅ FUTURE READY: attach file context in input
+        const enrichedQuestion = `
+${question}
+
+${
+  selectedFileIds.length
+    ? `Use context from uploaded files if relevant.`
+    : ""
+}
+`;
+
+        const aiResult = await generateSolution(enrichedQuestion, finalRole);
         const parsed = parseSolution(aiResult);
 
         if (parsed) {
@@ -91,14 +110,11 @@ export default function SolvePage() {
           setRawResponse(aiResult);
         }
 
-        // ✅ ✅ ✅ MEMORY TRACKING (SOLVE MODE)
+        // ✅ MEMORY
         if (userId && question) {
           const topic = detectTopic(question);
-
-          // optional score logic (basic)
           const score = parsed ? 1 : 0;
 
-          // 🔥 NON-BLOCKING (do NOT await)
           trackUserActivity(userId, "solve", topic, score);
         }
       }
@@ -113,8 +129,8 @@ export default function SolvePage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      
+    <div className="max-w-3xl mx-auto space-y-6 py-6">
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-white">
@@ -127,15 +143,16 @@ export default function SolvePage() {
       {!solutions.length && !rawResponse && !loading && (
         <Card>
           <p className="text-gray-400 text-sm text-center">
-            Enter a problem or upload an image to get started 🚀
+            Enter a problem, upload an image, or attach study files 🚀
           </p>
         </Card>
       )}
 
-      {/* Input Card */}
+      {/* 🔥 MAIN CARD */}
       <Card>
-        <div className="space-y-5">
-          
+        <div className="space-y-6">
+
+          {/* Input */}
           <div>
             <p className="text-sm text-gray-400 mb-2">
               Enter Problem (optional if using image):
@@ -147,11 +164,22 @@ export default function SolvePage() {
             />
           </div>
 
+          {/* Image Upload */}
           <div>
             <p className="text-sm text-gray-400 mb-2">
               Upload Image (optional):
             </p>
             <ImageUpload onImageSelect={setImage} />
+          </div>
+
+          {/* 📂 FILE SYSTEM (CLEAN INTEGRATION) */}
+          <div className="border-t border-gray-700 pt-4 space-y-4">
+            <p className="text-sm text-gray-400">
+              Attach Study Material (PDF, Notes, Images):
+            </p>
+
+            <FileUpload userId={userId} />
+            <FileList userId={userId} />
           </div>
 
           {ocrLoading && (
@@ -161,6 +189,7 @@ export default function SolvePage() {
             </div>
           )}
 
+          {/* Role */}
           <div>
             <p className="text-sm text-gray-400 mb-2">
               Select Role:
@@ -168,6 +197,7 @@ export default function SolvePage() {
             <RoleSelector selected={role} onChange={setRole} />
           </div>
 
+          {/* Custom Role */}
           <div>
             <p className="text-sm text-gray-400 mb-2">
               Or type custom role:
@@ -186,12 +216,14 @@ export default function SolvePage() {
             )}
           </div>
 
+          {/* Error */}
           {error && (
             <div className="bg-red-500/10 border border-red-400/30 p-3 rounded-xl text-sm text-red-400">
               {error}
             </div>
           )}
 
+          {/* Solve Button */}
           <Button
             onClick={handleSolve}
             disabled={loading || (!input.trim() && !image)}
@@ -208,10 +240,11 @@ export default function SolvePage() {
         </div>
       </Card>
 
+      {/* Preview */}
       {(input || image) && (
         <Card>
           <div className="text-sm text-gray-300 space-y-2">
-      
+
             {input && (
               <div>
                 <p className="text-cyan-400 font-medium">Your Input:</p>

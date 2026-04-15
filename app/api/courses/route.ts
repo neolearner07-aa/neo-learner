@@ -35,13 +35,17 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    // ✅ NEW: Extract selectedFileIds (IMPORTANT)
+    const { selectedFileIds } = body;
+
     // ✅ Zod Validation
     const validatedData = createCourseSchema.parse(body);
 
-    // 🔥 Service Call
+    // 🔥 Service Call (UPDATED)
     const course = await generateAndSaveLearningModule(
       validatedData.topic,
-      session.user.id
+      session.user.id,
+      selectedFileIds // ✅ CRITICAL ADDITION
     );
 
     // ✅ Standard Response

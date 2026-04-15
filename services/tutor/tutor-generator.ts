@@ -6,10 +6,11 @@ import { runAI } from "@/services/ai/orchestrator";
 export async function generateStudyPlan(
   goal: string,
   time: string,
-  duration: string
+  duration: string,
+  userId?: string, // ✅ NEW
+  selectedFileIds?: string[] // ✅ NEW
 ): Promise<string> {
   try {
-    // 🧠 Build input for AI
     const input = `
 Goal: ${goal}
 Time per day: ${time} hours
@@ -18,8 +19,13 @@ Duration: ${duration}
 Create a complete study plan.
 `;
 
-    // 🤖 Call AI Core (IMPORTANT: reuse existing system)
-    const response = await runAI("tutor", input);
+    // ✅ PASS CONTEXT
+    const response = await runAI(
+      "tutor",
+      input,
+      userId,
+      selectedFileIds
+    );
 
     if (!response) {
       throw new Error("Empty AI response");

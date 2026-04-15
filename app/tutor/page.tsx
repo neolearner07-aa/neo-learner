@@ -8,7 +8,13 @@ import Input from "@/components/ui/input";
 import Button from "@/components/ui/button";
 import Spinner from "@/components/ui/spinner";
 
-import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
+import FileUpload from "@/components/file/file-upload";
+import FileList from "@/components/file/file-list";
+
+import { trackUserActivity } from "@/services/memory/client-tracking";
+
+// ✅ NEW: Zustand store
+import { useFileStore } from "@/store/file-store";
 
 export default function TutorPage() {
   const router = useRouter();
@@ -18,8 +24,10 @@ export default function TutorPage() {
   const [duration, setDuration] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // ⚠️ Replace with real auth later
   const userId = "temp-user";
+
+  // ✅ NEW: file selection state
+  const { selectedFileIds } = useFileStore();
 
   const handleGenerate = async () => {
     if (!goal.trim() || !time.trim() || !duration.trim()) {
@@ -37,20 +45,22 @@ export default function TutorPage() {
 
       const fakePlanId = Date.now().toString();
 
-      // ✅ ✅ ✅ MEMORY TRACKING (TUTOR INTENT)
+      // ✅ DEBUG (optional but useful)
+      console.log("Selected Files:", selectedFileIds);
+
       if (userId && goal) {
         trackUserActivity(userId, "tutor", goal);
       }
 
-      router.push(`/tutor/${fakePlanId}`);
-    } catch (error: unknown) {
-      console.error("Error generating plan:", error);
+      // ✅ FUTURE READY: pass selected files via query (optional)
+      const query = new URLSearchParams({
+        goal,
+        time,
+        duration,
+        files: JSON.stringify(selectedFileIds),
+      });
 
-      if (error instanceof Error) {
-        alert(`❌ Error: ${error.message}`);
-      } else {
-        alert("❌ Something went wrong while generating your plan");
-      }
+      router.push(`/tutor/${fakePlanId}?${query.toString()}`);
     } finally {
       setLoading(false);
     }
@@ -58,7 +68,7 @@ export default function TutorPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-xl flex flex-col gap-6">
+      <Card className="w-full max-w-xl flex flex-col gap-6 p-6">
 
         <h1 className="text-2xl font-bold text-white text-center">
           📚 Tutor Mode
@@ -68,6 +78,24 @@ export default function TutorPage() {
           Create your personalized AI study plan
         </p>
 
+        {/* 📚 INLINE KNOWLEDGE SECTION */}
+        <div className="border border-gray-700 rounded-xl p-4 space-y-3 bg-black/20">
+          <div className="flex justify-between items-center">
+            <p className="text-sm font-medium text-white">
+              Your Study Materials
+            </p>
+            <span className="text-xs text-gray-400">
+              Optional but recommended
+            </span>
+          </div>
+
+          <FileUpload userId={userId} />
+
+          {/* ✅ CONNECTED TO GLOBAL FILE SELECTION */}
+          <FileList userId={userId} />
+        </div>
+
+        {/* 🎯 INPUTS */}
         <Input
           placeholder="Your Goal (e.g., Crack JEE, Learn Python)"
           value={goal}

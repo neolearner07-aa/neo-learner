@@ -1,4 +1,10 @@
 import { getWeakTopics, getStrongTopics } from "@/services/memory/memory.service";
+import { prisma } from "@/lib/prisma";
+
+type FileContent = {
+  text?: string;
+  summary?: string;
+};
 
 /**
  * Prompt System for NeoLearner
@@ -66,7 +72,7 @@ Rules:
 `;
 
 /**
- * Learning Mode Prompt (UPDATED - STRUCTURED JSON)
+ * Learning Mode Prompt
  */
 export const LEARNING_PROMPT = `
 You are an expert AI teacher.
@@ -111,7 +117,7 @@ Rules:
 `;
 
 /**
- * Solve Mode Prompt (STRICT STRUCTURED JSON)
+ * Solve Mode Prompt
  */
 export const SOLVE_PROMPT = `
 You are an expert problem solver.
@@ -137,7 +143,7 @@ Rules:
 `;
 
 /**
- * Arena Mode Prompt (STRICT MCQ GENERATION)
+ * Arena Mode Prompt
  */
 export const ARENA_PROMPT = `
 You are an expert quiz generator.
@@ -168,7 +174,7 @@ Rules:
 `;
 
 /**
- * Course Generation Prompt (STRICT STRUCTURED JSON)
+ * Course Generation Prompt
  */
 export const COURSE_PROMPT = `
 You are an expert course creator.
@@ -207,12 +213,73 @@ Rules:
 `;
 
 /**
- * Function to combine system prompt + user input + MEMORY
+ * 📚 FILE CONTEXT (SMART + SELECTABLE)
+ */
+
+// 🔹 Summaries (safe)
+async function getFileSummaries(userId: string, selectedFileIds?: string[]) {
+  const files = await prisma.userFile.findMany({
+    where: {
+      userId,
+      ...(selectedFileIds?.length
+        ? { id: { in: selectedFileIds } }
+        : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  });
+
+  const summaries = files
+    .map((file) => {
+      const content = file.content as FileContent | null;
+      return content?.summary || "";
+    })
+    .filter(Boolean);
+
+  if (!summaries.length) return "";
+
+  return `
+User Uploaded Knowledge (Summaries):
+${summaries.join("\n\n")}
+`;
+}
+
+// 🔹 Full content (heavy)
+async function getFileContent(userId: string, selectedFileIds?: string[]) {
+  const files = await prisma.userFile.findMany({
+    where: {
+      userId,
+      ...(selectedFileIds?.length
+        ? { id: { in: selectedFileIds } }
+        : {}),
+    },
+    orderBy: { createdAt: "desc" },
+    take: 3,
+  });
+
+  const texts = files
+    .map((file) => {
+      const content = file.content as FileContent | null;
+      return content?.text || "";
+    })
+    .filter(Boolean);
+
+  if (!texts.length) return "";
+
+  return `
+User Uploaded Content:
+${texts.join("\n\n").slice(0, 10000)}
+`;
+}
+
+/**
+ * 🚀 MAIN PROMPT BUILDER
  */
 export async function buildPrompt(
   type: "general" | "tutor" | "learning" | "solve" | "arena" | "course",
   userInput: string,
-  userId?: string
+  userId?: string,
+  selectedFileIds?: string[]
 ): Promise<string> {
   let basePrompt = GENERAL_PROMPT;
 
@@ -222,17 +289,21 @@ export async function buildPrompt(
   if (type === "arena") basePrompt = ARENA_PROMPT;
   if (type === "course") basePrompt = COURSE_PROMPT;
 
-  // ==============================
-  // 🧠 MEMORY INJECTION
-  // ==============================
   let memoryContext = "";
+  let summaryContext = "";
+  let contentContext = "";
 
   if (userId) {
     try {
-      const [weakTopics, strongTopics] = await Promise.all([
-        getWeakTopics(userId),
-        getStrongTopics(userId),
-      ]);
+      const [weakTopics, strongTopics, summaries, fullContent] =
+        await Promise.all([
+          getWeakTopics(userId),
+          getStrongTopics(userId),
+          getFileSummaries(userId, selectedFileIds),
+          type === "solve" || type === "learning"
+            ? getFileContent(userId, selectedFileIds)
+            : Promise.resolve(""),
+        ]);
 
       const weak = weakTopics.map((t) => t.topic).join(", ");
       const strong = strongTopics.map((t) => t.topic).join(", ");
@@ -248,19 +319,30 @@ Personalization Rules:
 - Be concise for strong topics
 - Adjust difficulty dynamically
 `;
+
+      summaryContext = summaries;
+      contentContext = fullContent;
     } catch (error) {
-      console.error("Memory Injection Failed:", error);
+      console.error("Context Injection Failed:", error);
     }
   }
 
-  // ==============================
-  // 🎯 FINAL PROMPT
-  // ==============================
   return `
 ${memoryContext}
 
+${summaryContext}
+
+${contentContext}
+
 ${basePrompt}
 
-Topic: ${userInput}
+User Input:
+${userInput}
+
+Instructions:
+- Use uploaded knowledge ONLY if relevant
+- Prioritize selected files if provided
+- Do NOT hallucinate from irrelevant content
+- Maintain strict JSON format
 `;
 }

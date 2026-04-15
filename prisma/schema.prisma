@@ -19,6 +19,7 @@ model User {
   aiUsage    AIUsage[]
   memories   UserMemory[]
   activities UserActivity[]
+  files      UserFile[]
 }
 
 model Course {
@@ -75,6 +76,18 @@ model UserActivity {
   topic     String
   score     Float?
   createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model UserFile {
+  id          String   @id @default(cuid())
+  userId      String
+  filename    String
+  fileType    String
+  fileUrl     String
+  content     Json?
+  createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 }

@@ -8,9 +8,14 @@ import Button from "@/components/ui/button";
 import Card from "@/components/ui/card";
 import Badge from "@/components/ui/badge";
 
+import FileUpload from "@/components/file/file-upload";
+import FileList from "@/components/file/file-list";
+
 export default function LearnPage() {
   const [topic, setTopic] = useState("");
   const router = useRouter();
+
+  const userId = "temp-user";
 
   const handleStart = () => {
     if (!topic.trim()) {
@@ -41,20 +46,36 @@ export default function LearnPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col gap-6 py-10">
-      {/* Header */}
+    <div className="max-w-3xl mx-auto flex flex-col gap-6 py-10">
+
+      {/* HEADER */}
       <div className="text-center space-y-2">
         <Badge>Learn Mode</Badge>
         <h1 className="text-3xl font-bold text-white">
           What do you want to learn today?
         </h1>
         <p className="text-gray-400">
-          Enter any topic and NeoLearner will teach you step-by-step.
+          Enter any topic or use your uploaded notes to learn smarter.
         </p>
       </div>
 
-      {/* Input Card */}
-      <Card className="flex flex-col gap-4 p-4">
+      {/* 📚 FILE SYSTEM (INTEGRATED CARD) */}
+      <Card className="flex flex-col gap-4 p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">
+            📂 Your Study Materials
+          </h2>
+          <p className="text-xs text-gray-400">
+            Upload PDFs, images, notes
+          </p>
+        </div>
+
+        <FileUpload userId={userId} />
+        <FileList userId={userId} />
+      </Card>
+
+      {/* 🎯 LEARNING INPUT */}
+      <Card className="flex flex-col gap-4 p-5">
         <Input
           placeholder="e.g. Photosynthesis, JavaScript basics, Gravity..."
           value={topic}
@@ -64,18 +85,22 @@ export default function LearnPage() {
           }}
         />
 
-        {/* 🎁 Reward Button */}
-        <Button
-          onClick={handleReward}
-          className="bg-yellow-500 text-black px-4 py-2 rounded"
-        >
-          Watch Ad + Get Credits
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Button
+            onClick={handleReward}
+            className="bg-yellow-500 text-black"
+          >
+            🎁 Get Credits
+          </Button>
 
-        {/* 🚀 Start */}
-        <Button onClick={handleStart} disabled={!topic.trim()}>
-          Start Learning
-        </Button>
+          <Button
+            onClick={handleStart}
+            disabled={!topic.trim()}
+            className="flex-1"
+          >
+            🚀 Start Learning
+          </Button>
+        </div>
       </Card>
     </div>
   );

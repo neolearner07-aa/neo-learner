@@ -5,18 +5,24 @@ import { runAI } from "@/services/ai/orchestrator";
  */
 export async function generateSolution(
   input: string,
-  role: string
+  role: string,
+  userId?: string, // ✅ NEW
+  selectedFileIds?: string[] // ✅ NEW
 ): Promise<string> {
   try {
-    // 🎭 Inject role into input
     const enhancedInput = `
 Act as a ${role}.
 
 ${input}
 `;
 
-    // 🚀 Use solve mode
-    const response = await runAI("solve", enhancedInput);
+    // ✅ PASS CONTEXT
+    const response = await runAI(
+      "solve",
+      enhancedInput,
+      userId,
+      selectedFileIds
+    );
 
     if (!response) {
       throw new Error("Empty AI response");

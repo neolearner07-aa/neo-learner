@@ -5,9 +5,13 @@ import { useParams } from "next/navigation";
 
 import LessonView from "@/components/learn/lesson-view";
 import Spinner from "@/components/ui/spinner";
+import Card from "@/components/ui/card";
+
+import FileUpload from "@/components/file/file-upload";
+import FileList from "@/components/file/file-list";
 
 import { LearningModule } from "@/types/learn";
-import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
+import { trackUserActivity } from "@/services/memory/client-tracking";
 
 export default function TopicPage() {
   const params = useParams();
@@ -17,8 +21,10 @@ export default function TopicPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ⚠️ Replace with your real auth logic if exists
-  const userId = "temp-user"; // ✅ TODO: replace with real user
+  // ✅ NEW: selected files state
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+
+  const userId = "temp-user";
 
   useEffect(() => {
     async function fetchData() {
@@ -28,7 +34,11 @@ export default function TopicPage() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ topic }),
+          body: JSON.stringify({
+            topic,
+            userId,
+            selectedFileIds, // ✅ NEW (CRITICAL)
+          }),
         });
 
         const result = await res.json();
@@ -79,7 +89,7 @@ export default function TopicPage() {
 
         setData(safeData);
 
-        // ✅ ✅ ✅ MEMORY TRACKING (LEARN MODE)
+        // ✅ MEMORY TRACKING
         if (userId && topic) {
           trackUserActivity(userId, "learn", topic);
         }
@@ -93,10 +103,32 @@ export default function TopicPage() {
     }
 
     fetchData();
-  }, [topic, userId]);
+  }, [topic, userId, selectedFileIds]); // ✅ IMPORTANT
 
   return (
-    <>
+    <div className="max-w-4xl mx-auto p-6 flex flex-col gap-6">
+
+      {/* 📚 FILE SYSTEM */}
+      <Card className="flex flex-col gap-4 p-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-white">
+            📂 Your Study Materials
+          </h2>
+          <p className="text-xs text-gray-400">
+            AI will use selected files while teaching
+          </p>
+        </div>
+
+        <FileUpload userId={userId} />
+
+        {/* ✅ CONNECT SELECTION */}
+        <FileList
+          userId={userId}
+          onSelectionChange={setSelectedFileIds}
+        />
+      </Card>
+
+      {/* CONTENT */}
       {loading && (
         <div className="flex flex-col justify-center items-center h-[60vh] gap-4">
           <Spinner />
@@ -107,25 +139,21 @@ export default function TopicPage() {
       )}
 
       {!loading && error && (
-        <div className="flex flex-col items-center justify-center gap-3 text-center">
-          <p className="text-red-400 font-semibold">
-            ⚠️ Something went wrong
-          </p>
-          <p className="text-gray-400 text-sm">
-            Please try again later.
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && !data && (
-        <div className="text-gray-400 text-center">
-          No data available
-        </div>
+        <Card>
+          <div className="text-center">
+            <p className="text-red-400 font-semibold">
+              ⚠️ Something went wrong
+            </p>
+            <p className="text-gray-400 text-sm">
+              Please try again later.
+            </p>
+          </div>
+        </Card>
       )}
 
       {!loading && !error && data && (
         <LessonView data={data} />
       )}
-    </>
+    </div>
   );
 }

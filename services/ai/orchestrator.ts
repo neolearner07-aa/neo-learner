@@ -37,12 +37,13 @@ function selectModel(userInput: string): "openai" | "gemini" {
 }
 
 /**
- * Main Orchestrator with Failover + Credits + Memory Personalization
+ * Main Orchestrator with Failover + Credits + Memory + File Context
  */
 export async function runAI(
   type: AIType,
   userInput: string,
-  userId?: string
+  userId?: string,
+  selectedFileIds?: string[] // ✅ NEW (ADDED, nothing removed)
 ): Promise<string> {
   try {
     // ==============================
@@ -68,9 +69,14 @@ export async function runAI(
     }
 
     // ==============================
-    // 🧠 STEP 2: BUILD PROMPT (WITH MEMORY)
+    // 🧠 STEP 2: BUILD PROMPT (WITH MEMORY + FILES)
     // ==============================
-    const prompt = await buildPrompt(type, userInput, userId); // ✅ CRITICAL FIX
+    const prompt = await buildPrompt(
+      type,
+      userInput,
+      userId,
+      selectedFileIds // ✅ NEW (passed forward)
+    );
 
     const primaryModel = selectModel(userInput);
     const fallbackModel =

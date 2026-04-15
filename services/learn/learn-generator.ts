@@ -8,7 +8,8 @@ import { LearningModule } from "@/types/learn";
  */
 export async function generateLearningModule(
   topic: string,
-  userId?: string
+  userId?: string,
+  selectedFileIds?: string[] // ✅ NEW
 ): Promise<string> {
   try {
     if (!topic || !topic.trim()) {
@@ -17,7 +18,13 @@ export async function generateLearningModule(
 
     const userInput = `Teach me ${topic} in a structured way`;
 
-    const response = await runAI("learning", userInput, userId);
+    // ✅ PASS userId + files
+    const response = await runAI(
+      "learning",
+      userInput,
+      userId,
+      selectedFileIds
+    );
 
     if (!response) {
       throw new Error("Empty AI response");
@@ -40,36 +47,33 @@ export async function generateLearningModule(
  */
 export async function generateAndSaveLearningModule(
   topic: string,
-  userId: string
+  userId: string,
+  selectedFileIds?: string[] // ✅ NEW
 ) {
   try {
     if (!topic || !topic.trim()) {
       throw new Error("Topic is required");
     }
 
-    // 🧠 1. CHECK EXISTING COURSE (GLOBAL, NOT USER-SPECIFIC)
     const existingCourse = await prisma.course.findFirst({
       where: {
-      title: topic,
+        title: topic,
       },
     });
 
-    // ✅ RETURN EXISTING (NO DUPLICATE EVER)
     if (existingCourse) {
       return existingCourse;
     }
 
-    // ✅ RETURN EXISTING (NO DUPLICATE)
-    if (existingCourse) {
-      return existingCourse;
-    }
-
-    // 🧠 2. GENERATE NEW CONTENT
-    const rawContent = await generateLearningModule(topic, userId);
+    // ✅ PASS FILE CONTEXT
+    const rawContent = await generateLearningModule(
+      topic,
+      userId,
+      selectedFileIds
+    );
 
     let structuredContent: LearningModule;
 
-    // 🧠 3. SAFE PARSING
     try {
       structuredContent = JSON.parse(rawContent) as LearningModule;
     } catch {
@@ -94,7 +98,6 @@ export async function generateAndSaveLearningModule(
       };
     }
 
-    // 🧠 4. SAVE TO DB
     const course = await createCourse({
       title: topic,
       description: `AI generated course for ${topic}`,

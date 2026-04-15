@@ -10,8 +10,11 @@ import CoachingBox from "@/components/tutor/coaching-box";
 import Spinner from "@/components/ui/spinner";
 import Card from "@/components/ui/card";
 
+import FileUpload from "@/components/file/file-upload";
+import FileList from "@/components/file/file-list";
+
 import { StudyPlan } from "@/types/tutor";
-import { trackUserActivity } from "@/services/memory/client-tracking"; // ✅ NEW
+import { trackUserActivity } from "@/services/memory/client-tracking";
 
 const mockPlan: StudyPlan = {
   goal: "Learn Python",
@@ -43,7 +46,6 @@ export default function PlanPage() {
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // ⚠️ Replace with real auth later
   const userId = "temp-user";
 
   useEffect(() => {
@@ -53,10 +55,8 @@ export default function PlanPage() {
     }, 800);
   }, []);
 
-  // ✅ ✅ ✅ MEMORY TRACKING (PLAN INTERACTION)
   useEffect(() => {
     if (!plan || !userId) return;
-
     trackUserActivity(userId, "tutor", plan.goal);
   }, [plan, userId]);
 
@@ -79,8 +79,24 @@ export default function PlanPage() {
   }
 
   return (
-    <div className="min-h-screen p-6 flex flex-col gap-6">
+    <div className="min-h-screen p-6 flex flex-col gap-6 max-w-4xl mx-auto">
 
+      {/* 📚 KNOWLEDGE PANEL */}
+      <Card className="p-5 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold text-white">
+            📚 Your Study Materials
+          </h2>
+          <p className="text-sm text-gray-400">
+            Add or review your notes while following the plan
+          </p>
+        </div>
+
+        <FileUpload userId={userId} />
+        <FileList userId={userId} />
+      </Card>
+
+      {/* 🎯 PLAN */}
       <StudyPlanView plan={plan} />
       <ProgressTracker plan={plan} />
       <CoachingBox plan={plan} />
