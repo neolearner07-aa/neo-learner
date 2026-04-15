@@ -46,6 +46,8 @@ export default function PlanPage() {
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [selectedFileIds, setSelectedFileIds] = useState<string[]>([]);
+
   const userId = "temp-user";
 
   useEffect(() => {
@@ -93,7 +95,9 @@ export default function PlanPage() {
         </div>
 
         <FileUpload userId={userId} />
-        <FileList userId={userId} />
+        <FileList 
+          onSelectionChange={setSelectedFileIds}
+          />
       </Card>
 
       {/* 🎯 PLAN */}
