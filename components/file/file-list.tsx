@@ -152,8 +152,8 @@ export default function FileList({
                   className="w-4 h-4 accent-cyan-500 cursor-pointer"
                 />
 
-                <div>
-                  <p className="font-medium text-white">
+                <div className="max-w-full overflow-hidden">
+                  <p className="font-medium text-white break-all text-sm">
                     {file.filename}
                   </p>
                   <p className="text-xs text-gray-400">

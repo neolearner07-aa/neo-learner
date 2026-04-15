@@ -14,6 +14,7 @@ import FileList from "@/components/file/file-list";
 export default function LearnPage() {
   const [topic, setTopic] = useState("");
   const router = useRouter();
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const userId = "temp-user";
 
@@ -71,7 +72,10 @@ export default function LearnPage() {
         </div>
 
         <FileUpload userId={userId} />
-        <FileList userId={userId} />
+        <FileList
+          userId={userId}
+          onSelectionChange={setSelectedFiles}
+        />
       </Card>
 
       {/* 🎯 LEARNING INPUT */}

@@ -39,6 +39,7 @@ export default function SolvePage() {
   const [customRole, setCustomRole] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const userId = "temp-user";
 
@@ -101,7 +102,12 @@ ${
 }
 `;
 
-        const aiResult = await generateSolution(enrichedQuestion, finalRole);
+        const aiResult = await generateSolution(
+          enrichedQuestion,
+          finalRole,
+          userId,
+          selectedFiles
+        );
         const parsed = parseSolution(aiResult);
 
         if (parsed) {
@@ -179,7 +185,10 @@ ${
             </p>
 
             <FileUpload userId={userId} />
-            <FileList userId={userId} />
+            <FileList
+              userId={userId}
+              onSelectionChange={setSelectedFiles}
+            />
           </div>
 
           {ocrLoading && (

@@ -23,6 +23,7 @@ export default function TutorPage() {
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const userId = "temp-user";
 
@@ -92,7 +93,10 @@ export default function TutorPage() {
           <FileUpload userId={userId} />
 
           {/* ✅ CONNECTED TO GLOBAL FILE SELECTION */}
-          <FileList userId={userId} />
+          <FileList
+            userId={userId}
+            onSelectionChange={setSelectedFiles}
+          />
         </div>
 
         {/* 🎯 INPUTS */}
