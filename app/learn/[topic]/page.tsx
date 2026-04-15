@@ -123,7 +123,6 @@ export default function TopicPage() {
 
         {/* ✅ CONNECT SELECTION */}
         <FileList
-          userId={userId}
           onSelectionChange={setSelectedFileIds}
         />
       </Card>
