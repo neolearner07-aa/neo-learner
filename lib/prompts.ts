@@ -217,7 +217,10 @@ Rules:
  */
 
 // 🔹 Summaries (safe)
-async function getFileSummaries(userId: string, selectedFileIds?: string[]) {
+async function getFileSummaries(
+  userId: string,
+  selectedFileIds?: string[]
+): Promise<string> {
   const files = await prisma.userFile.findMany({
     where: {
       userId,
@@ -245,7 +248,10 @@ ${summaries.join("\n\n")}
 }
 
 // 🔹 Full content (heavy)
-async function getFileContent(userId: string, selectedFileIds?: string[]) {
+async function getFileContent(
+  userId: string,
+  selectedFileIds?: string[]
+): Promise<string> {
   const files = await prisma.userFile.findMany({
     where: {
       userId,
@@ -254,7 +260,7 @@ async function getFileContent(userId: string, selectedFileIds?: string[]) {
         : {}),
     },
     orderBy: { createdAt: "desc" },
-    take: 3,
+    take: 5,
   });
 
   const texts = files
@@ -267,8 +273,8 @@ async function getFileContent(userId: string, selectedFileIds?: string[]) {
   if (!texts.length) return "";
 
   return `
-User Uploaded Content:
-${texts.join("\n\n").slice(0, 10000)}
+Selected User Files:
+${texts.join("\n\n").slice(0, 12000)}
 `;
 }
 
@@ -300,7 +306,9 @@ export async function buildPrompt(
           getWeakTopics(userId),
           getStrongTopics(userId),
           getFileSummaries(userId, selectedFileIds),
-          type === "solve" || type === "learning"
+          type === "solve" ||
+          type === "learning" ||
+          type === "tutor"
             ? getFileContent(userId, selectedFileIds)
             : Promise.resolve(""),
         ]);
@@ -342,6 +350,7 @@ ${userInput}
 Instructions:
 - Use uploaded knowledge ONLY if relevant
 - Prioritize selected files if provided
+- If selected files exist, prefer them over non-selected files
 - Do NOT hallucinate from irrelevant content
 - Maintain strict JSON format
 `;

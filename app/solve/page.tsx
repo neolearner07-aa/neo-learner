@@ -20,7 +20,7 @@ import SolutionView from "@/components/solve/solution-view";
 import { splitQuestions } from "@/services/solve/split-questions";
 import { trackUserActivity } from "@/services/memory/client-tracking";
 
-// ✅ NEW: Zustand store
+// ✅ Zustand store
 import { useFileStore } from "@/store/file-store";
 
 type Role =
@@ -39,12 +39,11 @@ export default function SolvePage() {
   const [customRole, setCustomRole] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const userId = "temp-user";
 
-  // ✅ NEW: selected files
-  const { selectedFileIds } = useFileStore();
+  // ✅ GLOBAL selected files
+  const { selectedFileIds, setSelectedFileIds } = useFileStore();
 
   function detectTopic(question: string): string {
     if (!question) return "General";
@@ -84,20 +83,18 @@ export default function SolvePage() {
         setOcrLoading(false);
       }
 
-      // ✅ DEBUG (important for File-Aware AI)
       console.log("Selected Files:", selectedFileIds);
 
       const questions = splitQuestions(finalInput);
       const results: SolveResponse[] = [];
 
       for (const question of questions) {
-        // ✅ FUTURE READY: attach file context in input
         const enrichedQuestion = `
 ${question}
 
 ${
   selectedFileIds.length
-    ? `Use context from uploaded files if relevant.`
+    ? "Use context from selected uploaded study files if relevant."
     : ""
 }
 `;
@@ -106,8 +103,9 @@ ${
           enrichedQuestion,
           finalRole,
           userId,
-          selectedFiles
+          selectedFileIds
         );
+
         const parsed = parseSolution(aiResult);
 
         if (parsed) {
@@ -135,10 +133,10 @@ ${
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 py-6">
+    <div className="max-w-3xl mx-auto space-y-6 py-6 w-full overflow-x-hidden">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-2xl font-semibold text-white">
           Solve Mode
         </h1>
@@ -154,7 +152,7 @@ ${
         </Card>
       )}
 
-      {/* 🔥 MAIN CARD */}
+      {/* MAIN CARD */}
       <Card>
         <div className="space-y-6">
 
@@ -163,6 +161,7 @@ ${
             <p className="text-sm text-gray-400 mb-2">
               Enter Problem (optional if using image):
             </p>
+
             <Input
               placeholder="e.g., Solve 2x + 5 = 15"
               value={input}
@@ -175,19 +174,23 @@ ${
             <p className="text-sm text-gray-400 mb-2">
               Upload Image (optional):
             </p>
+
             <ImageUpload onImageSelect={setImage} />
           </div>
 
-          {/* 📂 FILE SYSTEM (CLEAN INTEGRATION) */}
-          <div className="border-t border-gray-700 pt-4 space-y-4">
+          {/* FILE SYSTEM */}
+          <div className="border-t border-gray-700 pt-4 space-y-4 min-w-0">
             <p className="text-sm text-gray-400">
               Attach Study Material (PDF, Notes, Images):
             </p>
 
             <FileUpload userId={userId} />
-            <FileList
-              onSelectionChange={setSelectedFiles}
-            />
+
+            <div className="min-w-0 overflow-hidden">
+              <FileList
+                onSelectionChange={setSelectedFileIds}
+              />
+            </div>
           </div>
 
           {ocrLoading && (
@@ -202,6 +205,7 @@ ${
             <p className="text-sm text-gray-400 mb-2">
               Select Role:
             </p>
+
             <RoleSelector selected={role} onChange={setRole} />
           </div>
 
@@ -251,19 +255,25 @@ ${
       {/* Preview */}
       {(input || image) && (
         <Card>
-          <div className="text-sm text-gray-300 space-y-2">
+          <div className="text-sm text-gray-300 space-y-2 break-words">
 
             {input && (
               <div>
-                <p className="text-cyan-400 font-medium">Your Input:</p>
+                <p className="text-cyan-400 font-medium">
+                  Your Input:
+                </p>
                 <p>{input}</p>
               </div>
             )}
 
             {image && (
               <div>
-                <p className="text-cyan-400 font-medium">Image Selected:</p>
-                <p className="text-xs text-gray-400">{image.name}</p>
+                <p className="text-cyan-400 font-medium">
+                  Image Selected:
+                </p>
+                <p className="text-xs text-gray-400 break-all">
+                  {image.name}
+                </p>
               </div>
             )}
 
@@ -271,7 +281,10 @@ ${
         </Card>
       )}
 
-      <SolutionView solutions={solutions} rawResponse={rawResponse} />
+      <SolutionView
+        solutions={solutions}
+        rawResponse={rawResponse}
+      />
     </div>
   );
 }

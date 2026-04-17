@@ -8,8 +8,8 @@ type NavbarProps = {
 
 export default function Navbar({ toggleSidebar }: NavbarProps) {
   return (
-    <header className="w-full px-6 py-4 flex items-center justify-between bg-[var(--glass-bg)] border-b border-[var(--glass-border)] backdrop-blur-md sticky top-0 z-50">
-
+    <header className="fixed top-0 left-0 right-0 z-50 w-full px-4 sm:px-6 py-4 flex items-center justify-between bg-[var(--glass-bg)] border-b border-[var(--glass-border)] backdrop-blur-md">
+      
       {/* Left */}
       <div className="flex items-center gap-4">
         

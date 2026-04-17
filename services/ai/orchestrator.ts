@@ -75,7 +75,7 @@ export async function runAI(
       type,
       userInput,
       userId,
-      selectedFileIds // ✅ NEW (passed forward)
+      selectedFileIds
     );
 
     const primaryModel = selectModel(userInput);

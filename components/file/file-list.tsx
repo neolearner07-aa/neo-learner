@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FileRecord } from "@/types/file";
 import Button from "../ui/button";
 import Card from "../ui/card";
+import { useFileStore } from "@/store/file-store";
 
 type FileContent = {
   text?: string;
@@ -17,16 +18,21 @@ export default function FileList({
 }) {
   const [files, setFiles] = useState<FileRecord[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // ✅ Fetch files (SECURE — no userId from client)
+  // ✅ Global selection state
+  const {
+    selectedFileIds,
+    toggleFile,
+    setSelectedFileIds,
+    clearSelection,
+  } = useFileStore();
+
+  // ✅ Fetch files
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const res = await fetch(`/api/files`);
-
+        const res = await fetch("/api/files");
         const data = await res.json();
 
         if (!res.ok || !data.success) {
@@ -44,13 +50,17 @@ export default function FileList({
     fetchFiles();
   }, []);
 
-  // ✅ Notify parent (File-Aware AI integration)
+  // ✅ Parent sync
   useEffect(() => {
-    onSelectionChange?.(selectedFiles);
-  }, [selectedFiles, onSelectionChange]);
+    onSelectionChange?.(selectedFileIds);
+  }, [selectedFileIds, onSelectionChange]);
 
   if (loading) {
-    return <p className="text-gray-400 text-sm">Loading files...</p>;
+    return (
+      <p className="text-gray-400 text-sm">
+        Loading files...
+      </p>
+    );
   }
 
   if (!files.length) {
@@ -61,14 +71,17 @@ export default function FileList({
     );
   }
 
-  // ✅ Delete handler (SECURE)
+  // ✅ Delete file
   const handleDelete = async (fileId: string) => {
     try {
       setDeletingId(fileId);
 
-      const res = await fetch(`/api/files?fileId=${fileId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/files?fileId=${fileId}`,
+        {
+          method: "DELETE",
+        }
+      );
 
       const data = await res.json();
 
@@ -76,11 +89,15 @@ export default function FileList({
         throw new Error(data.error || "Delete failed");
       }
 
-      // remove from UI
-      setFiles((prev) => prev.filter((f) => f.id !== fileId));
+      setFiles((prev) =>
+        prev.filter((f) => f.id !== fileId)
+      );
 
-      // remove from selected
-      setSelectedFiles((prev) => prev.filter((id) => id !== fileId));
+      setSelectedFileIds(
+        selectedFileIds.filter(
+          (id) => id !== fileId
+        )
+      );
     } catch (err) {
       console.error(err);
       alert("Failed to delete file");
@@ -89,34 +106,27 @@ export default function FileList({
     }
   };
 
-  // ✅ Toggle selection
-  const toggleSelect = (fileId: string) => {
-    setSelectedFiles((prev) =>
-      prev.includes(fileId)
-        ? prev.filter((id) => id !== fileId)
-        : [...prev, fileId]
+  // ✅ Select all
+  const handleSelectAll = () => {
+    setSelectedFileIds(
+      files.map((file) => file.id)
     );
   };
 
-  // ✅ Select All
-  const handleSelectAll = () => {
-    setSelectedFiles(files.map((f) => f.id));
-  };
-
-  // ✅ Clear Selection
+  // ✅ Clear
   const handleClearSelection = () => {
-    setSelectedFiles([]);
+    clearSelection();
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full min-w-0 overflow-hidden">
       {/* TOP BAR */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <p className="text-sm text-gray-400">
-          {selectedFiles.length} selected
+          {selectedFileIds.length} selected
         </p>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             onClick={handleSelectAll}
             disabled={files.length === 0}
@@ -127,7 +137,9 @@ export default function FileList({
 
           <Button
             onClick={handleClearSelection}
-            disabled={selectedFiles.length === 0}
+            disabled={
+              selectedFileIds.length === 0
+            }
             className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg disabled:opacity-50"
           >
             Clear
@@ -136,34 +148,41 @@ export default function FileList({
       </div>
 
       {files.map((file) => {
-        const content = (file.content || {}) as FileContent;
-        const isSelected = selectedFiles.includes(file.id);
+        const content =
+          (file.content || {}) as FileContent;
+
+        const isSelected =
+          selectedFileIds.includes(file.id);
 
         return (
           <Card
             key={file.id}
-            className={`p-4 flex flex-col gap-3 border transition-all duration-200 ${
+            className={`p-4 flex flex-col gap-3 border transition-all duration-200 w-full min-w-0 overflow-hidden ${
               isSelected
                 ? "border-cyan-400 bg-cyan-500/5 shadow-lg shadow-cyan-500/10"
                 : "border-white/10"
             }`}
           >
             {/* HEADER */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 min-w-0">
+
+              <div className="flex items-start gap-3 min-w-0 flex-1">
                 {/* Checkbox */}
                 <input
                   type="checkbox"
                   checked={isSelected}
-                  onChange={() => toggleSelect(file.id)}
-                  className="w-4 h-4 accent-cyan-500 cursor-pointer"
+                  onChange={() =>
+                    toggleFile(file.id)
+                  }
+                  className="w-4 h-4 mt-1 accent-cyan-500 cursor-pointer shrink-0"
                 />
 
-                <div className="max-w-full overflow-hidden">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <p className="font-medium text-white break-all text-sm">
                     {file.filename}
                   </p>
-                  <p className="text-xs text-gray-400">
+
+                  <p className="text-xs text-gray-400 break-all">
                     {file.fileType}
                   </p>
                 </div>
@@ -171,17 +190,23 @@ export default function FileList({
 
               {/* DELETE */}
               <Button
-                onClick={() => handleDelete(file.id)}
-                disabled={deletingId === file.id}
-                className="bg-red-500/80 hover:bg-red-600 text-white text-xs px-3 py-1 rounded-lg disabled:opacity-50"
+                onClick={() =>
+                  handleDelete(file.id)
+                }
+                disabled={
+                  deletingId === file.id
+                }
+                className="bg-red-500/80 hover:bg-red-600 text-white text-xs px-3 py-1 rounded-lg disabled:opacity-50 w-full sm:w-auto"
               >
-                {deletingId === file.id ? "Removing..." : "Remove"}
+                {deletingId === file.id
+                  ? "Removing..."
+                  : "Remove"}
               </Button>
             </div>
 
             {/* SUMMARY */}
             {content.summary && (
-              <p className="text-sm text-gray-300 line-clamp-3">
+              <p className="text-sm text-gray-300 break-words">
                 {content.summary}
               </p>
             )}
@@ -191,7 +216,7 @@ export default function FileList({
               href={file.fileUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-cyan-400 text-xs hover:underline"
+              className="text-cyan-400 text-xs hover:underline break-all"
             >
               View File →
             </a>

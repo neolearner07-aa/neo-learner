@@ -12,6 +12,11 @@ import { createCourseSchema } from "@/validators/course";
 import { generateAndSaveLearningModule } from "@/services/learn/learn-generator";
 import { rateLimit } from "@/lib/rate-limit";
 
+type CourseRequestBody = {
+  topic: string;
+  selectedFileIds?: string[];
+};
+
 export async function POST(req: Request) {
   return withErrorHandler(async () => {
     const session = await getServerSession(authOptions);
@@ -33,7 +38,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const body = await req.json();
+    const body = (await req.json()) as CourseRequestBody;
 
     // ✅ NEW: Extract selectedFileIds (IMPORTANT)
     const { selectedFileIds } = body;

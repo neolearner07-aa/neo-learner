@@ -14,6 +14,8 @@ import FileList from "@/components/file/file-list";
 export default function LearnPage() {
   const [topic, setTopic] = useState("");
   const router = useRouter();
+
+  // ✅ Selected files for AI context
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const userId = "temp-user";
@@ -25,7 +27,14 @@ export default function LearnPage() {
     }
 
     const encodedTopic = encodeURIComponent(topic.trim());
-    router.push(`/learn/${encodedTopic}`);
+
+    // ✅ Pass selected file ids in query
+    const query =
+      selectedFiles.length > 0
+        ? `?files=${encodeURIComponent(selectedFiles.join(","))}`
+        : "";
+
+    router.push(`/learn/${encodedTopic}${query}`);
   };
 
   const handleReward = async () => {
@@ -47,38 +56,42 @@ export default function LearnPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto flex flex-col gap-6 py-10">
+    <div className="max-w-3xl mx-auto flex flex-col gap-6 py-10 px-4 w-full overflow-x-hidden">
 
       {/* HEADER */}
       <div className="text-center space-y-2">
         <Badge>Learn Mode</Badge>
+
         <h1 className="text-3xl font-bold text-white">
           What do you want to learn today?
         </h1>
+
         <p className="text-gray-400">
           Enter any topic or use your uploaded notes to learn smarter.
         </p>
       </div>
 
-      {/* 📚 FILE SYSTEM (INTEGRATED CARD) */}
-      <Card className="flex flex-col gap-4 p-5">
-        <div className="flex items-center justify-between">
+      {/* FILE SYSTEM */}
+      <Card className="flex flex-col gap-4 p-5 w-full overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <h2 className="text-lg font-semibold text-white">
             📂 Your Study Materials
           </h2>
+
           <p className="text-xs text-gray-400">
             Upload PDFs, images, notes
           </p>
         </div>
 
         <FileUpload userId={userId} />
+
         <FileList
           onSelectionChange={setSelectedFiles}
         />
       </Card>
 
-      {/* 🎯 LEARNING INPUT */}
-      <Card className="flex flex-col gap-4 p-5">
+      {/* INPUT */}
+      <Card className="flex flex-col gap-4 p-5 w-full overflow-hidden">
         <Input
           placeholder="e.g. Photosynthesis, JavaScript basics, Gravity..."
           value={topic}
@@ -88,10 +101,16 @@ export default function LearnPage() {
           }}
         />
 
-        <div className="flex flex-col sm:flex-row gap-3">
+        {selectedFiles.length > 0 && (
+          <p className="text-xs text-cyan-400">
+            {selectedFiles.length} file(s) selected for AI learning context
+          </p>
+        )}
+
+        <div className="flex flex-col sm:flex-row gap-3 w-full">
           <Button
             onClick={handleReward}
-            className="bg-yellow-500 text-black"
+            className="bg-yellow-500 text-black w-full sm:w-auto"
           >
             🎁 Get Credits
           </Button>
@@ -99,7 +118,7 @@ export default function LearnPage() {
           <Button
             onClick={handleStart}
             disabled={!topic.trim()}
-            className="flex-1"
+            className="flex-1 w-full"
           >
             🚀 Start Learning
           </Button>

@@ -55,10 +55,11 @@ export default function PlanPage() {
       setPlan(mockPlan);
       setLoading(false);
     }, 800);
-  }, []);
+  }, [planId]);
 
   useEffect(() => {
     if (!plan || !userId) return;
+
     trackUserActivity(userId, "tutor", plan.goal);
   }, [plan, userId]);
 
@@ -81,26 +82,34 @@ export default function PlanPage() {
   }
 
   return (
-    <div className="min-h-screen p-6 flex flex-col gap-6 max-w-4xl mx-auto">
+    <div className="min-h-screen p-4 sm:p-6 flex flex-col gap-6 max-w-4xl mx-auto w-full overflow-x-hidden">
 
-      {/* 📚 KNOWLEDGE PANEL */}
-      <Card className="p-5 space-y-4">
+      {/* KNOWLEDGE PANEL */}
+      <Card className="p-5 space-y-4 overflow-hidden">
         <div>
           <h2 className="text-lg font-semibold text-white">
             📚 Your Study Materials
           </h2>
+
           <p className="text-sm text-gray-400">
             Add or review your notes while following the plan
           </p>
         </div>
 
         <FileUpload userId={userId} />
-        <FileList 
+
+        <FileList
           onSelectionChange={setSelectedFileIds}
-          />
+        />
+
+        {selectedFileIds.length > 0 && (
+          <p className="text-xs text-cyan-400">
+            {selectedFileIds.length} file(s) selected for plan context
+          </p>
+        )}
       </Card>
 
-      {/* 🎯 PLAN */}
+      {/* PLAN */}
       <StudyPlanView plan={plan} />
       <ProgressTracker plan={plan} />
       <CoachingBox plan={plan} />

@@ -13,7 +13,7 @@ import FileList from "@/components/file/file-list";
 
 import { trackUserActivity } from "@/services/memory/client-tracking";
 
-// ✅ NEW: Zustand store
+// ✅ Zustand store
 import { useFileStore } from "@/store/file-store";
 
 export default function TutorPage() {
@@ -23,11 +23,13 @@ export default function TutorPage() {
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // kept without removing anything
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   const userId = "temp-user";
 
-  // ✅ NEW: file selection state
+  // global file state
   const { selectedFileIds } = useFileStore();
 
   const handleGenerate = async () => {
@@ -46,14 +48,12 @@ export default function TutorPage() {
 
       const fakePlanId = Date.now().toString();
 
-      // ✅ DEBUG (optional but useful)
       console.log("Selected Files:", selectedFileIds);
 
       if (userId && goal) {
         trackUserActivity(userId, "tutor", goal);
       }
 
-      // ✅ FUTURE READY: pass selected files via query (optional)
       const query = new URLSearchParams({
         goal,
         time,
@@ -68,8 +68,8 @@ export default function TutorPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <Card className="w-full max-w-xl flex flex-col gap-6 p-6">
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 w-full overflow-x-hidden">
+      <Card className="w-full max-w-xl flex flex-col gap-6 p-5 sm:p-6 overflow-hidden">
 
         <h1 className="text-2xl font-bold text-white text-center">
           📚 Tutor Mode
@@ -79,12 +79,13 @@ export default function TutorPage() {
           Create your personalized AI study plan
         </p>
 
-        {/* 📚 INLINE KNOWLEDGE SECTION */}
-        <div className="border border-gray-700 rounded-xl p-4 space-y-3 bg-black/20">
-          <div className="flex justify-between items-center">
+        {/* KNOWLEDGE SECTION */}
+        <div className="border border-gray-700 rounded-xl p-4 space-y-3 bg-black/20 overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <p className="text-sm font-medium text-white">
               Your Study Materials
             </p>
+
             <span className="text-xs text-gray-400">
               Optional but recommended
             </span>
@@ -92,13 +93,19 @@ export default function TutorPage() {
 
           <FileUpload userId={userId} />
 
-          {/* ✅ CONNECTED TO GLOBAL FILE SELECTION */}
+          {/* FIXED */}
           <FileList
             onSelectionChange={setSelectedFiles}
           />
+
+          {selectedFiles.length > 0 && (
+            <p className="text-xs text-cyan-400">
+              {selectedFiles.length} file(s) selected
+            </p>
+          )}
         </div>
 
-        {/* 🎯 INPUTS */}
+        {/* INPUTS */}
         <Input
           placeholder="Your Goal (e.g., Crack JEE, Learn Python)"
           value={goal}
@@ -117,7 +124,11 @@ export default function TutorPage() {
           onChange={(e) => setDuration(e.target.value)}
         />
 
-        <Button onClick={handleGenerate} disabled={loading}>
+        <Button
+          onClick={handleGenerate}
+          disabled={loading}
+          className="w-full"
+        >
           {loading ? (
             <div className="flex items-center gap-2">
               <Spinner />

@@ -10,28 +10,26 @@ type AppShellProps = {
 };
 
 export default function AppShell({ children }: AppShellProps) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen">
-      
-      {/* Sidebar */}
-      <Sidebar isOpen={isOpen} />
+    <div className="min-h-screen w-full overflow-x-hidden bg-black text-white">
+      {/* Fixed Navbar */}
+      <Navbar toggleSidebar={() => setIsOpen((prev) => !prev)} />
 
-      {/* Main Area */}
-      <div className="flex flex-col flex-1 transition-all duration-300">
-        
-        {/* Navbar */}
-        <Navbar toggleSidebar={() => setIsOpen((prev) => !prev)} />
+      {/* Fixed Sidebar Overlay */}
+      <Sidebar
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+      />
 
-        {/* Content */}
-        <main className="flex-1 p-6">
+      {/* Main Content */}
+      <div className="flex flex-col min-h-screen pt-16">
+        <main className="flex-1 w-full max-w-full px-4 sm:px-6 overflow-x-hidden">
           {children}
         </main>
 
-        {/* Footer */}
         <Footer />
-        
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+/* C:\Users\admin\Desktop\neo-learner\services\learn\learn-generator.ts */
+
 import { runAI } from "@/services/ai/orchestrator";
 import { createCourse } from "@/services/courses/course.service";
 import { prisma } from "@/lib/prisma";
