@@ -12,8 +12,28 @@
   --glass-border: rgba(255, 255, 255, 0.1);
 }
 
-/* Global styles */
+/* Global reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 body {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+
   background: radial-gradient(circle at top, #0f172a, #020617);
   color: var(--foreground);
   font-family: system-ui, sans-serif;
@@ -22,13 +42,50 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-html,
-body {
+/* Prevent media overflow */
+img,
+video,
+canvas,
+svg,
+iframe {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Prevent long text overflow */
+p,
+span,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+a,
+button,
+li {
+  overflow-wrap: anywhere;
+}
+
+/* Form controls */
+input,
+textarea,
+select,
+button {
+  max-width: 100%;
+  font: inherit;
+}
+
+/* Better mobile tap behavior */
+button,
+a {
+  touch-action: manipulation;
+}
+
+/* Remove accidental horizontal scroll containers */
+#__next {
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
-}
-
-* {
-  box-sizing: border-box;
 }
